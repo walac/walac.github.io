@@ -5,7 +5,7 @@ Lightweight Jekyll theme
 
  - mobile first
  - syntax highlighting
- - automatic disqus / isso integration
+ - automatic [disqus](https://disqus.com/) / [isso](http://posativ.org/isso/) integration
 
 Released under *public domain*.
 
