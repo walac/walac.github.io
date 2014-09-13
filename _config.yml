@@ -6,7 +6,7 @@ baseurl: "/"
 url: "http://mysite.org"
 twitter_username: user
 github_username: user
-disqus_username: user
+disqus_username: false
 isso_domain: comments.mysite.org
 
 # Build settings
