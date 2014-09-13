@@ -1,0 +1,4 @@
+Contrast
+========
+
+Lightweight Jekyll theme
