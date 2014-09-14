@@ -1,11 +1,10 @@
 body {
     font-family: "Source Sans Pro", "Calibri", sans-serif;
     font-weight: 200;
-    font-size: 1.5em;
     font-size: calc(.6vmax + .8em);
     line-height: 1.4em;
     margin: 0;
-    padding: 0 calc(32% - 10em);
+    padding: 0 calc(27% - 6em);
     background: whitesmoke;
 }
 
@@ -49,8 +48,8 @@ blockquote {
 }
 
 body > header, article, body > footer {
-    padding-left: calc(20% - 5em);
-    padding-right: calc(20% - 5em);
+    padding-left: calc(12% - 1.6em);
+    padding-right: calc(12% - 1.6em);
 }
 
 body > header, body > footer {
