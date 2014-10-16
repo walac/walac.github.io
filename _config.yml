@@ -1,11 +1,11 @@
 # Site settings
-title: blog title
-email: me@mysite.org
-description: "Really cool blog about ... something"
+title: Wander Lairson Costa
+email: wander.lairson@gmail.com
+description: "Hacking stuff"
 baseurl: "/"
-url: "http://mysite.org"
-twitter_username: user
-github_username: user
+url: "https://walac.github.io"
+twitter_username: walac00
+github_username: walac
 disqus_username: false
 isso_domain: comments.mysite.org
 
