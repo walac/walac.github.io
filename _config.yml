@@ -6,8 +6,8 @@ baseurl: "/"
 url: "https://walac.github.io"
 twitter_username: walac00
 github_username: walac
-disqus_username: false
-isso_domain: comments.mysite.org
+disqus_username: walac
+isso_domain:
 
 # Build settings
 markdown: redcarpet

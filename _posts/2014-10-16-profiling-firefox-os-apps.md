@@ -1,6 +1,7 @@
 ---
 title: "Profiling Firefox OS apps"
 category: mozilla, B2G
+comments: true
 tags: [B2G, performance, profiling, mozilla]
 ---
 
