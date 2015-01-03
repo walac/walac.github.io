@@ -42,21 +42,66 @@ I prepared a list of some Mercurial extensions that will make your life easier
 when coming from git. These extensions will make you feel more comfortable
 while moving from git to Mercurial.
 
-git feature                                                                                     | Mercurial extension
-------------------------------------------------------------------------------------------------|---------------------------------------------------------------------
-[color](http://git-scm.com/book/en/v2/Customizing-Git-Git-Configuration#Colors-in-Git)          | [Color](http://mercurial.selenic.com/wiki/ColorExtension)
-[git rebase](http://git-scm.com/docs/git-rebase)                                                | [Rebase](http://mercurial.selenic.com/wiki/RebaseExtension)
-[Interactive rebase](https://www.atlassian.com/git/tutorials/rewriting-history/git-rebase-i)    | [Histedit](http://mercurial.selenic.com/wiki/HisteditExtension)
-[git stash](http://git-scm.com/docs/git-stash)                                                  | [Shelve](http://mercurial.selenic.com/wiki/ShelveExtension)
-[git clean](http://git-scm.com/docs/git-clean)                                                  | [Purge](http://mercurial.selenic.com/wiki/PurgeExtension)
-[git add -i](https://www.kernel.org/pub/software/scm/git/docs/git-add.html)                     | [Record](http://mercurial.selenic.com/wiki/RecordExtension)
-[gitk](http://git-scm.com/docs/gitk)                                                            | [Hgk](http://mercurial.selenic.com/wiki/HgkExtension)
-[\_\_git_ps1](http://fedoraproject.org/wiki/Git_quick_reference#Display_current_branch_in_bash) | [Prompt](http://mercurial.selenic.com/wiki/PromptExtension)
-[git cherry-pick](http://git-scm.com/docs/git-cherry-pick)                                      | [Transplant](http://mercurial.selenic.com/wiki/TransplantExtension)
-[git send-email](http://git-scm.com/docs/git-send-email)                                        | [PatchBomb](http://mercurial.selenic.com/wiki/PatchbombExtension)
-[git am](http://git-scm.com/docs/git-am)                                                        | [Mbox](http://mercurial.selenic.com/wiki/MboxExtension)
-[Topic branches](http://fiji.sc/Git_topic_branches)                                             | [Bookmarks](http://mercurial.selenic.com/wiki/BookmarksExtension)
-[Paged log](http://git-scm.com/docs/git-log)                                                    | [Pager](http://mercurial.selenic.com/wiki/PagerExtension)
+--------------------------------------------------------------------------------------------------
+<table border=1 cellpadding=3>
+    <tr>
+        <th>git feature</th>
+        <th>Mercurial extension</th>
+    </tr>
+    <tr>
+        <td><a href="http://git-scm.com/book/en/v2/Customizing-Git-Git-Configuration#Colors-in-Git">color</a>          </td>
+        <td> <a href="http://mercurial.selenic.com/wiki/ColorExtension">Color</a></td>
+    </tr>
+    <tr>
+        <td><a href="http://git-scm.com/docs/git-rebase">git rebase</a>                                                </td>
+        <td> <a href="http://mercurial.selenic.com/wiki/RebaseExtension">Rebase</a></td>
+    </tr>
+    <tr>
+        <td><a href="https://www.atlassian.com/git/tutorials/rewriting-history/git-rebase-i">Interactive rebase</a>    </td>
+        <td> <a href="http://mercurial.selenic.com/wiki/HisteditExtension">Histedit</a></td>
+    </tr>
+    <tr>
+        <td><a href="http://git-scm.com/docs/git-stash">git stash</a>                                                  </td>
+        <td> <a href="http://mercurial.selenic.com/wiki/ShelveExtension">Shelve</a></td>
+    </tr>
+    <tr>
+        <td><a href="http://git-scm.com/docs/git-clean">git clean</a>                                                  </td>
+        <td> <a href="http://mercurial.selenic.com/wiki/PurgeExtension">Purge</a></td>
+    </tr>
+    <tr>
+        <td><a href="https://www.kernel.org/pub/software/scm/git/docs/git-add.html">git add -i</a>                     </td>
+        <td> <a href="http://mercurial.selenic.com/wiki/RecordExtension">Record</a></td>
+    </tr>
+    <tr>
+        <td><a href="http://git-scm.com/docs/gitk">gitk</a>                                                            </td>
+        <td> <a href="http://mercurial.selenic.com/wiki/HgkExtension">Hgk</a></td>
+    </tr>
+    <tr>
+        <td><a href="http://fedoraproject.org/wiki/Git_quick_reference#Display_current_branch_in_bash">\_\_git_ps1</a> </td>
+        <td> <a href="http://mercurial.selenic.com/wiki/PromptExtension">Prompt</a></td>
+    </tr>
+    <tr>
+        <td><a href="http://git-scm.com/docs/git-cherry-pick">git cherry-pick</a>                                      </td>
+        <td> <a href="http://mercurial.selenic.com/wiki/TransplantExtension">Transplant</a></td>
+    </tr>
+    <tr>
+        <td><a href="http://git-scm.com/docs/git-send-email">git send-email</a>                                        </td>
+        <td> <a href="http://mercurial.selenic.com/wiki/PatchbombExtension">PatchBomb</a></td>
+    </tr>
+    <tr>
+        <td><a href="http://git-scm.com/docs/git-am">git am</a>                                                        </td>
+        <td> <a href="http://mercurial.selenic.com/wiki/MboxExtension">Mbox</a></td>
+    </tr>
+    <tr>
+        <td><a href="http://fiji.sc/Git_topic_branches">Topic branches</a>                                             </td>
+        <td> <a href="http://mercurial.selenic.com/wiki/BookmarksExtension">Bookmarks</a></td>
+    </tr>
+    <tr>
+        <td><a href="http://git-scm.com/docs/git-log">Paged log</a>                                                    </td>
+        <td> <a href="http://mercurial.selenic.com/wiki/PagerExtension">Pager</a></td>
+    </tr>
+</table>
+--------------------------------------------------------------------------------------------------
 
 This [link](http://mercurial.selenic.com/wiki/GitConcepts) has a lot more
 information about differences between git and Mercurial, including Mercurial
