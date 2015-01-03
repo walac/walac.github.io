@@ -9,8 +9,8 @@ So far I have been a heavy [git](http://git-scm.com/) user, but since I joined
 [Mozilla](http://www.mozilla.org) I have given
 [Mercurial](http://mercurial.selenic.com/) a try. I must
 say that migrating from [Subversion](https://subversion.apache.org/) to git
-was far less painful than from git to Mercurial. I think there a few reasons
-to that:
+was far less painful than from git to Mercurial. I think there are a few
+reasons for that:
 
 * When I started to learn git, I started it with
 [PyUSB](http://walac.github.io/pyusb), a small personal project that was on its
@@ -77,7 +77,7 @@ while moving from git to Mercurial.
         <td> <a href="http://mercurial.selenic.com/wiki/HgkExtension">Hgk</a></td>
     </tr>
     <tr>
-        <td><a href="http://fedoraproject.org/wiki/Git_quick_reference#Display_current_branch_in_bash">\_\_git_ps1</a> </td>
+        <td><a href="http://fedoraproject.org/wiki/Git_quick_reference#Display_current_branch_in_bash">__git_ps1</a> </td>
         <td> <a href="http://mercurial.selenic.com/wiki/PromptExtension">Prompt</a></td>
     </tr>
     <tr>
@@ -144,16 +144,16 @@ a push by adding these entries in your
 
 ### Special note on Bookmarks
 
-Since Mercurial version 1.8, Bookmarks is now part of Mercurial core. It is
-often advertised as *git branches on Mercurial*. **It is not**! The most
+Since Mercurial version 1.8, Bookmarks are now part of Mercurial core. They are
+often advertised as *git branches on Mercurial*. **They are not**! The most
 difficult part for me was to understand that Mercurial has no branch
-support like git. Period. Bookmarks is just a hack that tries
+support like git. Period. Bookmarks are just a hack that tries
 to mimic topic branches, but, technically, a bookmark is not a branch, it is
-more like a tag. I am not going to explain how bookmarks work, you can learn more
+more like a tag. I am not going to explain how Bookmarks work, you can learn more
 on it [here](http://mercurial.aragost.com/kick-start/en/bookmarks/).
 
 The most irritating thing regarding Bookmarks is that changing the history in
-one bookmark can affect other bookmarks. In some cases, when you
+one bookmark can affect other bookmarks as well. In some cases, when you
 create multiple heads descending from a bookmark, you cannot edit its
 history at all. Let's try an example. Imagine you fix a bug and submit it
 for review. While you wait for feedback, you create more bookmarks to work
@@ -233,7 +233,7 @@ descendant branches. In Mercurial this is not true simply because all the commit
 ### Conclusion
 
 If your git workflow relies heavily on git branching capabilities and history
-editing, you will have some trouble to adapt yourself to Mercurial.
+editing, you will have some trouble to adapt yourself to Mercurial (like me).
 
 If I could request just one feature to Mercurial developers, that would be
 lightweight branches like git. That would give Mercurial a big boost.
