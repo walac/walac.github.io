@@ -96,3 +96,10 @@ nav ul {
     padding: 1em 0;
     margin: 0;
 }
+
+code.has-jax {
+  font: inherit;
+  font-size: 100%;
+  background: inherit;
+  border: inherit;
+}
