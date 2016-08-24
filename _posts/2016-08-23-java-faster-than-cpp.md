@@ -5,7 +5,7 @@ comments: true
 tags: [cpp]
 ---
 
-Some days ago, a friend emailed me desperatejly because a Java code
+Some days ago, a friend emailed me desperated because a Java code
 was faster than his C++ implementation. These *Java faster than C++* claims
 were very common when Java was the tech companies fashion language. I never
 liked Java because I always thought it was quite verbose (however, I never tried
