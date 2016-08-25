@@ -73,7 +73,7 @@ I came back to google and found
 [iprofiler](https://developer.apple.com/library/ios/recipes/Instruments_help_articles/Articles/CollectingandViewingDatawiththeiprofilerCommand-lineTool.html).
 That was a life saver, I could profile from command line and see the results on
 Instruments GUI. Instruments come with a set of *Profiler templates*, the one
-of interest here if the *time profiler*, which as its name says,
+of interest here is the *time profiler*, which as its name says,
 profiles the time spent on function calls. Let's start by profiling the compression
 operation:
 
