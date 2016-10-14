@@ -68,7 +68,7 @@ Mac OS X for a [project](http://walac.github.io/taskcluster-worker-macosx-engine
 on at Mozilla. As I have no much experience on Mac development, and that includes
 native tools, I made some google research and came across
 [Instruments](https://developer.apple.com/library/watchos/documentation/DeveloperTools/Conceptual/InstrumentsUserGuide/index.html).
-After some painful time trying to use it inside [Xcode](http://tinyurl.com/gq7zv5c),
+After some painful time trying to use it inside [Xcode](http://tinyurl.com/jdrg3he),
 I came back to google and found
 [iprofiler](https://developer.apple.com/library/ios/recipes/Instruments_help_articles/Articles/CollectingandViewingDatawiththeiprofilerCommand-lineTool.html).
 That was a life saver, I could profile from command line and see the results on
