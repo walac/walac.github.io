@@ -125,7 +125,7 @@ sys  0m0.007s
 
 ![Not Bad](/images/cppjava/notbad.jpg)
 
-Can we make this better? Hrm, let's profile it one more time, but this time,
+Can we make this better? Hrm, lets profile it one more time, but this time,
 we will profile decompression, since it is still slower than its Java
 counterpart:
 
@@ -133,7 +133,7 @@ counterpart:
 
 Wait! What are those `__shared_weak_count::__release_shared`/`__add_shared` calls consuming
 almost half of the running time? If we take a look at the
-[implementation](http://tinyurl.com/zssfynq), we see he uses
+[implementation](http://tinyurl.com/zssfynq), we see it uses
 [std::shared_ptr](http://en.cppreference.com/w/cpp/memory/shared_ptr) to allocate
 the nodes for the Huffman tree. As you might know, `shared_ptr` provides a
 smart pointer with a thread safe, reference counted, copy semantics. The code is single
