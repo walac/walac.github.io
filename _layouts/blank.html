@@ -15,7 +15,7 @@
     {% if site.disqus_username  and page.id %}
     <script type="text/javascript">
       var disqus_shortname = '{{ site.disqus_username }}';
-      var disqus_identifier = '{{ page.id }}';
+      var disqus_identifier = '{{ page.url }}';
       var disqus_url = '{{ site.url }}';
       (function() {
         var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
