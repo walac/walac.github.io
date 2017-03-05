@@ -10,7 +10,7 @@ disqus_username: walac
 isso_domain:
 
 # Build settings
-# markdown: redcarpet
+markdown: redcarpet
 permalink: /:title/
 
 defaults:
