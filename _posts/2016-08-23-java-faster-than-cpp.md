@@ -68,7 +68,7 @@ Mac OS X for a [project](http://walac.github.io/taskcluster-worker-macosx-engine
 on at Mozilla. As I have no much experience on Mac development, and that includes
 native tools, I made some google research and came across
 [Instruments](https://developer.apple.com/library/watchos/documentation/DeveloperTools/Conceptual/InstrumentsUserGuide/index.html).
-After some painful time trying to use it inside [Xcode](http://tinyurl.com/jdrg3he),
+After some painful time trying to use it inside [Xcode](http://www.wnd.com/files/2015/03/poop-emoji-emoticon-600-300x300.jpg),
 I came back to google and found
 [iprofiler](https://developer.apple.com/library/ios/recipes/Instruments_help_articles/Articles/CollectingandViewingDatawiththeiprofilerCommand-lineTool.html).
 That was a life saver, I could profile from command line and see the results on
@@ -133,8 +133,8 @@ counterpart:
 
 Wait! What are those `__shared_weak_count::__release_shared`/`__add_shared` calls consuming
 almost half of the running time? If we take a look at the
-[implementation](http://tinyurl.com/zssfynq), we see it uses
-[std::shared_ptr](http://en.cppreference.com/w/cpp/memory/shared_ptr) to allocate
+[implementation](https://github.com/Spagiari/Stream-Data-Compactor/blob/c5a98eec543b77ced6d299f462382ecd64d07b48/src/Huffman.h),
+we see it uses [std::shared_ptr](http://en.cppreference.com/w/cpp/memory/shared_ptr) to allocate
 the nodes for the Huffman tree. As you might know, `shared_ptr` provides a
 smart pointer with a thread safe, reference counted, copy semantics. The code is single
 threaded, so this thread safe reference counting is a waste of resources, but the point
