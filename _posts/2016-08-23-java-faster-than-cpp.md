@@ -58,7 +58,7 @@ sys 0m0.010s
 ```
 
 Just for the record, I profiled the second execution of each command to make sure
-results won't be differ because of file caching.
+results won't differ because of file caching.
 
 Ok, C++ implementation is indeed slower, the question is why? After a rough look at
 the source code, the heap allocations were quite suspicious, but after some
