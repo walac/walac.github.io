@@ -4,9 +4,9 @@ email: wander.lairson@gmail.com
 description: "Hackers gonna hack"
 baseurl: "/"
 url: "https://walac.github.io"
-twitter_username: walac00
+twitter_username:
 github_username: walac
-disqus_username: walac
+disqus_username:
 isso_domain:
 
 # Build settings
