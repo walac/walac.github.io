@@ -9,7 +9,7 @@ For the last year I have been using the [Go](https://golang.org/)
 programming language, working on the implementation of the
 [taskcluster-worker](https://github.com/taskcluster/taskcluster-worker)
 project.  If you want to learn more about `taskcluster-worker`, you can
-read [this post](http://walac.github.io/taskcluster-worker-macosx-engine/).
+read [this post](https://walac.github.io/taskcluster-worker-macosx-engine/).
 
 In the `taskcluster-worker` task payload, there is a field called `command`,
 that specifies the command the task must run. Through a configuration file,
@@ -149,7 +149,7 @@ fork/exec /bin/echo: operation not permitted
 Wait! Can't we run a process with our own account??? This is non-sense.
 Let's investigate the root cause of this weird behavior. A system
 call must be returning `EPERM` and causing the whole thing to collapse.
-We can use [`dtrace`](http://dtrace.org/blogs/about/) to discover
+We can use [`dtrace`](https://dtrace.org/blogs/about/) to discover
 exactly what system call is failing:
 
 ```shell
@@ -161,7 +161,7 @@ CPU     ID                    FUNCTION:NAME
 
 The above dtrace script logs all system calls executing in the context of our
 process that return `EPERM` error. Explaining the details of `dtrace` is beyond
-the scope of this post, please refer to the [dtrace website](http://dtrace.org)
+the scope of this post, please refer to the [dtrace website](https://dtrace.org)
 to find the documentation about it.
 
 The output shows that the [`setgroups`](https://linux.die.net/man/2/setgroups)

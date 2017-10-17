@@ -9,8 +9,8 @@
     <link rel="canonical" href="{{ page.url | prepend: site.url }}">
     <link rel="stylesheet" type="text/css" href="{{ "basic.css" | prepend: site.baseurl }}">
     <link rel="stylesheet" type="text/css" href="{{ "highlight.css" | prepend: site.baseurl }}">
-    <link href='http://fonts.googleapis.com/css?family=Source+Sans+Pro:200,300,400,600,700,200italic,300italic,400italic,600italic,700italic' rel='stylesheet' type='text/css'>
-    <link href='http://fonts.googleapis.com/css?family=Gentium+Basic:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Source+Sans+Pro:200,300,400,600,700,200italic,300italic,400italic,600italic,700italic' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Gentium+Basic:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
     <link rel="alternate" type="application/rss+xml" title="{{ site.title }} &raquo; Feed" href="{{ "feed.xml" | prepend: site.baseurl }}">
     {% if site.disqus_username  and page.id %}
     <script type="text/javascript">
@@ -24,7 +24,7 @@
       })();
     </script>
     {% endif %}
-    {% if site.isso_domain and page.id %}<script data-isso="http://{{ site.isso_domain }}" src="//{{ site.isso_domain }}/js/embed.min.js"></script>{% endif %}
+    {% if site.isso_domain and page.id %}<script data-isso="https://{{ site.isso_domain }}" src="//{{ site.isso_domain }}/js/embed.min.js"></script>{% endif %}
   </head>
   <body>
     <header>

@@ -17,12 +17,12 @@ Java programmer, I didn't follow the language evolution.
 Back to the post, the code in question is a
 [Huffman code](https://en.wikipedia.org/wiki/Huffman_coding) implementation. He based his
 [C++ implementation](https://github.com/Spagiari/Stream-Data-Compactor/blob/master/src/Huffman.h)
-on [Sedgewick's Java version](http://algs4.cs.princeton.edu/code/edu/princeton/cs/algs4/Huffman.java.html).
+on [Sedgewick's Java version](https://algs4.cs.princeton.edu/code/edu/princeton/cs/algs4/Huffman.java.html).
 If you want to profile on your own, you can clone his repo (as he already merged
 my patches, you'll need to rewind git history a bit to profile the old code). You can find instructions
-on how install the Java code [here](http://algs4.cs.princeton.edu/code/).
+on how install the Java code [here](https://algs4.cs.princeton.edu/code/).
 
-Let's get it started by using the simple [time](http://man7.org/linux/man-pages/man1/time.1.html) command.
+Let's get it started by using the simple [time](https://man7.org/linux/man-pages/man1/time.1.html) command.
 In this test, we are measuring the time to compress and decompress
 the sample [mobydick.txt](https://github.com/Spagiari/Stream-Data-Compactor/blob/master/test/mobydick.txt)
 file. First let's profile the compression and decompression times for the Java version:
@@ -64,11 +64,11 @@ Ok, C++ implementation is indeed slower, the question is why? After a rough look
 the source code, the heap allocations were quite suspicious, but after some
 experiments I realized this was not the case, then I started to profile the code.
 If you know me, you also know I am a very keen Linux user, but I had to switch to
-Mac OS X for a [project](http://walac.github.io/taskcluster-worker-macosx-engine/) I am working
+Mac OS X for a [project](https://walac.github.io/taskcluster-worker-macosx-engine/) I am working
 on at Mozilla. As I have no much experience on Mac development, and that includes
 native tools, I made some google research and came across
 [Instruments](https://developer.apple.com/library/watchos/documentation/DeveloperTools/Conceptual/InstrumentsUserGuide/index.html).
-After some painful time trying to use it inside [Xcode](http://www.wnd.com/files/2015/03/poop-emoji-emoticon-600-300x300.jpg),
+After some painful time trying to use it inside [Xcode](https://www.wnd.com/files/2015/03/poop-emoji-emoticon-600-300x300.jpg),
 I came back to google and found
 [iprofiler](https://developer.apple.com/library/ios/recipes/Instruments_help_articles/Articles/CollectingandViewingDatawiththeiprofilerCommand-lineTool.html).
 That was a life saver, I could profile from command line and see the results on
@@ -95,15 +95,15 @@ std::string data(
 );
 ```
 
-The problem lies on using [std::cin](http://www.cplusplus.com/reference/iostream/cin/)
+The problem lies on using [std::cin](https://www.cplusplus.com/reference/iostream/cin/)
 to read the file. ISO C++11 says that standard streams objects must be thread safe,
 that means a mutex lock/unlock operation is executed each time the internal I/O buffer
 is accessed. In the code above, a mutex is locked for each character read,
 which makes things painfully slow. The solution is to use a
-[std::fstream](http://www.cplusplus.com/reference/fstream/fstream/) object, as it has
+[std::fstream](https://www.cplusplus.com/reference/fstream/fstream/) object, as it has
 no imposed lock contention. Obviously, all this applies to file writing as well, and
-we take the same path of replacing [std::cout](http://en.cppreference.com/w/cpp/io/cout)
-by [std::fstream](http://www.cplusplus.com/reference/fstream/fstream/).
+we take the same path of replacing [std::cout](https://en.cppreference.com/w/cpp/io/cout)
+by [std::fstream](https://www.cplusplus.com/reference/fstream/fstream/).
 
 Now let's see how much we improved compression and decompression performance:
 
@@ -134,7 +134,7 @@ counterpart:
 Wait! What are those `__shared_weak_count::__release_shared`/`__add_shared` calls consuming
 almost half of the running time? If we take a look at the
 [implementation](https://github.com/Spagiari/Stream-Data-Compactor/blob/c5a98eec543b77ced6d299f462382ecd64d07b48/src/Huffman.h),
-we see it uses [std::shared_ptr](http://en.cppreference.com/w/cpp/memory/shared_ptr) to allocate
+we see it uses [std::shared_ptr](https://en.cppreference.com/w/cpp/memory/shared_ptr) to allocate
 the nodes for the Huffman tree. As you might know, `shared_ptr` provides a
 smart pointer with a thread safe, reference counted, copy semantics. The code is single
 threaded, so this thread safe reference counting is a waste of resources, but the point
@@ -142,9 +142,9 @@ is that `shared_ptr` is thread safe, and not going to suggest to implement a sin
 thread version of it. What do we do? Well, a careful review on the code shows that we
 actually don't need a smart pointer with copy semantics, the pointer is never shared,
 but transferred from one owner to another, so what we need is
-[moving semantics](http://tinyurl.com/d74bmox), and we have a perfect smart pointer
+[moving semantics](https://tinyurl.com/d74bmox), and we have a perfect smart pointer
 with this characteristic:
-[std::unique_ptr](http://en.cppreference.com/w/cpp/memory/unique_ptr).
+[std::unique_ptr](https://en.cppreference.com/w/cpp/memory/unique_ptr).
 
 By replacing `std::shared_ptr` with `std::unique_ptr`, we are free
 from the reference counting contention. Let's see how fast we got

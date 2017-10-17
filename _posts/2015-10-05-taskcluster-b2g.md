@@ -6,7 +6,7 @@ tags: [taskcluster]
 ---
 
 In this post I am going to talk about my work for phone builds inside the
-[Taskcluster](http://docs.taskcluster.net/) infrastructure. Mozilla is
+[Taskcluster](https://docs.taskcluster.net/) infrastructure. Mozilla is
 slightly moving from Buildbot to Taskcluster. Here I am going to
 give a survivor guide on Firefox OS phone builds.
 
@@ -15,9 +15,9 @@ Submitting tasks
 
 A task is nothing more than a json file containing the description 
 of the job to execute. But you don't need to handle the json directly, all tasks
-are written in [YAML](http://en.wikipedia.org/wiki/YAML), and it is then processed
-by the [mach](http://mzl.la/1MkZ4gz) command. The in tree tasks are located
-at [testing/taskcluster/tasks](http://mzl.la/1MkYOhw) and the build tasks are
+are written in [YAML](https://en.wikipedia.org/wiki/YAML), and it is then processed
+by the [mach](https://mzl.la/1MkZ4gz) command. The in tree tasks are located
+at [testing/taskcluster/tasks](https://mzl.la/1MkYOhw) and the build tasks are
 inside the `builds/` directory.
 
 My favorite command to try out a task is the `mach taskcluster-build` command.
@@ -26,7 +26,7 @@ for Taskcluster submission.
 
 ```bash
 $ ./mach taskcluster-build \
-    --head-repository=http://hg.mozilla.org/mozilla-central 
+    --head-repository=https://hg.mozilla.org/mozilla-central 
     --head-rev=tip \
     --owner=foobar@mozilla.com \
     tasks/builds/b2g_desktop_opt.yml
@@ -54,9 +54,9 @@ Mozharness
 is what we use for effectively build stuff. Mozharness
 architecture, despite its code size, is quite simple. Under the 
 `scripts` directory you find the harness scripts. We are specifically
-interested in the [b2g\_build.py](http://tinyurl.com/nlm8mjm) script. As the script
+interested in the [b2g\_build.py](https://tinyurl.com/nlm8mjm) script. As the script
 name says, it is responsible for B2G builds. The B2G harness configuration
-files are located at the [b2g/config](http://tinyurl.com/nzqlkfe) directory. Not
+files are located at the [b2g/config](https://tinyurl.com/nzqlkfe) directory. Not
 surprisingly, all files starting with "taskcluster" are for Taskcluster
 related builds.
 
@@ -65,7 +65,7 @@ Here are the most common configurations:
 <dl>
   <dt>default_vcs</dt>
   <dd>This is the default vcs used to clone repositories when no other is given.
-  [tc_vcs](http://tc-vcs.readthedocs.org/en/latest/) allows mozharness to
+  [tc_vcs](https://tc-vcs.readthedocs.org/en/latest/) allows mozharness to
   clone either git or mercurial repositories transparently, with repository
   caching support.</dd>
   <dt>default_actions</dt>
@@ -100,14 +100,14 @@ python <gecko-dir>/testing/mozharness/scripts/b2g_build.py \
   --log-level=debug \
   --target=flame-kk \
   --b2g-config-dir=flame-kk \
-  --repo=http://hg.mozilla.org/mozilla-central \
+  --repo=https://hg.mozilla.org/mozilla-central \
 ```
 
 Remember you need your flame connected to the machine so the build system
 can extract the blobs.
 
 In general you don't need to worry about mozharness command line because it is wrapped
-by the [build scripts](http://tinyurl.com/py798c3).
+by the [build scripts](https://tinyurl.com/py798c3).
 
 Hacking Taskcluster B2G builds
 ------------------------------
@@ -121,7 +121,7 @@ run inside the `builder` docker image. Phone builds are more complex, because:
   server to send OTA update data.
 
 3. Phone build tasks need to upload symbols to the
-  [crash reporter](http://mzl.la/1Ta6jfY).
+  [crash reporter](https://mzl.la/1Ta6jfY).
 
 Due to (1), only users authenticated with a @mozilla account are allowed
 to download phone binaries (this works the same way as private builds). And
@@ -131,7 +131,7 @@ so only authorized users can submit tasks to it.
 If you need to create a build task for a new phone, most of the time you will
 starting from an existing task (Flame and Aries tasks are preferred) and then
 make your customizations. You might need to add new features to the
-[build scripts](http://tinyurl.com/py798c3), which currently are not the most
+[build scripts](https://tinyurl.com/py798c3), which currently are not the most
 flexible scripts around.
 
 If you need to customize mozharness, make sure your changes are Python 2.6

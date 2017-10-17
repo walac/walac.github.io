@@ -43,7 +43,7 @@ Let's see an example:
 
 ```javascript
 $.ajax({
-  url: 'http://cors-proxy.taskcluster.net/request',
+  url: 'https://cors-proxy.taskcluster.net/request',
   method: 'POST',
   contentType: 'application/json',
   data: {

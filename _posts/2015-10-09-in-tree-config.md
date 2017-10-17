@@ -6,10 +6,10 @@ tags: [taskcluster]
 ---
 
 This post is about our plans for representing Taskcluster tasks inside
-the gecko tree. [Jonas](http://jonasfj.dk/),
-[Dustin](http://code.v.igoro.us/) and I had a discussion in Berlin about this,
+the gecko tree. [Jonas](https://jonasfj.dk/),
+[Dustin](https://code.v.igoro.us/) and I had a discussion in Berlin about this,
 here I summarize what we have so far. We currently store tasks in an
-[yaml](http://yaml.org/) file and they translate to json format using the
+[yaml](https://yaml.org/) file and they translate to json format using the
 mach command. The syntax we have now is not the most flexible one, it is hard
 to parameterize the task and very difficulty to represents tasks relationships.
 

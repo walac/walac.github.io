@@ -6,12 +6,12 @@ tags: [taskcluster]
 ---
 
 In this quarter, I worked on implementing the
-[taskcluster-worker](http://blog.gregarndt.com/taskcluster/2016/03/24/birth-of-new-worker/)
+[taskcluster-worker](https://blog.gregarndt.com/taskcluster/2016/03/24/birth-of-new-worker/)
 Mac OSX engine. Before talking about this specific implementation,
 let me explain what a worker is and how taskcluster-worker differs from
 [docker-worker](https://github.com/taskcluster/docker-worker), the currently
 main worker in
-[Taskcluster](http://yourdomain.com/mozilla,%20ci/2014/03/04/taskcluster.html).
+[Taskcluster](https://yourdomain.com/mozilla,%20ci/2014/03/04/taskcluster.html).
 
 The role of a Taskcluster worker
 ================================

@@ -5,21 +5,21 @@ comments: true
 tags: [B2G, performance, profiling, mozilla]
 ---
 
-B2G has a [built-in profiler](http://tinyurl.com/B2Gprofile) that you can use to
+B2G has a [built-in profiler](https://tinyurl.com/B2Gprofile) that you can use to
 find hot spots in your app.  The process is made easy by the
-[profile.sh](http://tinyurl.com/profilesh) script, which helps you to generate
+[profile.sh](https://tinyurl.com/profilesh) script, which helps you to generate
 a profile file for upload to the
 [Cleopatra](https://people.mozilla.org/~bgirard/cleopatra/) application.
 
 Earlier, you had to build your own Firefox OS image to use `profile.sh`
 tool, but that's no longer the case. Thanks to
 [Snappy symbolication server](https://github.com/vdjeric/Snappy-Symbolication-Server),
-you can grab a [Mozilla nightly](http://ftp.mozilla.org/pub/mozilla.org/b2g/nightly/)
+you can grab a [Mozilla nightly](https://ftp.mozilla.org/pub/mozilla.org/b2g/nightly/)
 image and start to investigate where your app is wasting time.
 
 `profile.sh` communicates with the device through
-[adb](http://developer.android.com/tools/help/adb.html), so you need to enable
-it in the [developer menu](http://tinyurl.com/fxosdevmenu). You also need an
+[adb](https://developer.android.com/tools/help/adb.html), so you need to enable
+it in the [developer menu](https://tinyurl.com/fxosdevmenu). You also need an
 engineering build image of your device (images with `-eng` suffix).
 
 In this post, I am going into the steps to get a profile stack trace for your app.
@@ -82,11 +82,11 @@ option which allows you to pass the URL of the
 that perform symbol resolution.
 
 For Firefox OS oficial builds, you can use the
-[Mozilla symbolication server](http://symbolapi.mozilla.org):
+[Mozilla symbolication server](https://symbolapi.mozilla.org):
 
 ```bash
-$ ./profile.sh capture -s http://symbolapi.mozilla.org
-Symbols: http://symbolapi.mozilla.org
+$ ./profile.sh capture -s https://symbolapi.mozilla.org
+Symbols: https://symbolapi.mozilla.org
 Signaling Profiled Processes: 208 1059
 Stabilizing 208 b2g ...
 Pulling /data/local/tmp/profile_0_208.txt into profile_208_b2g.txt
@@ -104,7 +104,7 @@ Removing old profile files (from device) ... done
 The format of the pulled files is `profile_PID_NAME.txt` and the files with
 symbols resolved have the same name but with `.sym` extension. It also
 creates a merged file called `profile_captured.sym`. After that, you can
-[upload the results to Cleopatra](http://tinyurl.com/CleopatraUpload):
+[upload the results to Cleopatra](https://tinyurl.com/CleopatraUpload):
 
 ![cleopatra](/images/cleopatra.jpg)
 
@@ -142,4 +142,4 @@ with private builds only, and it will
 [eventually ships with Nightly too](https://bugzilla.mozilla.org/show_bug.cgi?id=1078369).
 
 If you have any doubts, ping [me](https://mozillians.org/en-US/u/wcosta/)
-on [#fxos-automation](http://www.standu.ps/project/fxos-automation) room.
+on [#fxos-automation](https://www.standu.ps/project/fxos-automation) room.

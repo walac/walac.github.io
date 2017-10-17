@@ -5,15 +5,15 @@ comments: true
 tags: [mercurial]
 ---
 
-So far I have been a heavy [git](http://git-scm.com/) user, but since I joined
-[Mozilla](http://www.mozilla.org) I have given
-[Mercurial](http://mercurial.selenic.com/) a try. I must
+So far I have been a heavy [git](https://git-scm.com/) user, but since I joined
+[Mozilla](https://www.mozilla.org) I have given
+[Mercurial](https://mercurial.selenic.com/) a try. I must
 say that migrating from [Subversion](https://subversion.apache.org/) to git
 was far less painful than from git to Mercurial. I think there are a few
 reasons for that:
 
 * When I started to learn git, I started it with
-[PyUSB](http://walac.github.io/pyusb), a small personal project that was on its
+[PyUSB](https://walac.github.io/pyusb), a small personal project that was on its
 youth at that time. This means I needed just the most basic commands to start
 using it. When I started on Mercurial, I was working on
 [Gecko](https://developer.mozilla.org/en-US/docs/Mozilla/Gecko), a very big and
@@ -22,7 +22,7 @@ more advanced commands from day one.
 
 * When you install git, you have all you need, all commands you need are there.
 Mercurial, in the other hand,
-[operates in a very different way](http://gregoryszorc.com/blog/2013/05/12/thoughts-on-mercurial-%28and-git%29/).
+[operates in a very different way](https://gregoryszorc.com/blog/2013/05/12/thoughts-on-mercurial-%28and-git%29/).
 It just ships with some basic commands, delegating most of the more advanced
 stuff to extensions. So you have to dig to find the extensions that enable the
 Mercurial approach to commands you love in git.
@@ -31,11 +31,11 @@ Mercurial approach to commands you love in git.
 workflow rely heavily on branches (more on that later).
 
 Most of the day to day commands in Mercurial are quite similar to git, like
-[clone](http://selenic.com/hg/help/clone) and
-[commit](http://selenic.com/hg/help/commit). Some others have very different names,
-like [git revert](http://git-scm.com/docs/git-revert), which in Mercurial
-is called [backout](http://mercurial.selenic.com/wiki/Backout).
-[hg revert](http://selenic.com/hg/help/revert) is used to discard non-committed
+[clone](https://selenic.com/hg/help/clone) and
+[commit](https://selenic.com/hg/help/commit). Some others have very different names,
+like [git revert](https://git-scm.com/docs/git-revert), which in Mercurial
+is called [backout](https://mercurial.selenic.com/wiki/Backout).
+[hg revert](https://selenic.com/hg/help/revert) is used to discard non-committed
 changes in your repository.
 
 I prepared a list of some Mercurial extensions that will make your life easier
@@ -49,67 +49,67 @@ while moving from git to Mercurial.
         <th>Mercurial extension</th>
     </tr>
     <tr>
-        <td><a href="http://git-scm.com/book/en/v2/Customizing-Git-Git-Configuration#Colors-in-Git">color</a>          </td>
-        <td> <a href="http://mercurial.selenic.com/wiki/ColorExtension">Color</a></td>
+        <td><a href="https://git-scm.com/book/en/v2/Customizing-Git-Git-Configuration#Colors-in-Git">color</a>          </td>
+        <td> <a href="https://mercurial.selenic.com/wiki/ColorExtension">Color</a></td>
     </tr>
     <tr>
-        <td><a href="http://git-scm.com/docs/git-rebase">git rebase</a>                                                </td>
-        <td> <a href="http://mercurial.selenic.com/wiki/RebaseExtension">Rebase</a></td>
+        <td><a href="https://git-scm.com/docs/git-rebase">git rebase</a>                                                </td>
+        <td> <a href="https://mercurial.selenic.com/wiki/RebaseExtension">Rebase</a></td>
     </tr>
     <tr>
         <td><a href="https://www.atlassian.com/git/tutorials/rewriting-history/git-rebase-i">Interactive rebase</a>    </td>
-        <td> <a href="http://mercurial.selenic.com/wiki/HisteditExtension">Histedit</a></td>
+        <td> <a href="https://mercurial.selenic.com/wiki/HisteditExtension">Histedit</a></td>
     </tr>
     <tr>
-        <td><a href="http://git-scm.com/docs/git-stash">git stash</a>                                                  </td>
-        <td> <a href="http://mercurial.selenic.com/wiki/ShelveExtension">Shelve</a></td>
+        <td><a href="https://git-scm.com/docs/git-stash">git stash</a>                                                  </td>
+        <td> <a href="https://mercurial.selenic.com/wiki/ShelveExtension">Shelve</a></td>
     </tr>
     <tr>
-        <td><a href="http://git-scm.com/docs/git-clean">git clean</a>                                                  </td>
-        <td> <a href="http://mercurial.selenic.com/wiki/PurgeExtension">Purge</a></td>
+        <td><a href="https://git-scm.com/docs/git-clean">git clean</a>                                                  </td>
+        <td> <a href="https://mercurial.selenic.com/wiki/PurgeExtension">Purge</a></td>
     </tr>
     <tr>
         <td><a href="https://www.kernel.org/pub/software/scm/git/docs/git-add.html">git add -i</a>                     </td>
-        <td> <a href="http://mercurial.selenic.com/wiki/RecordExtension">Record</a></td>
+        <td> <a href="https://mercurial.selenic.com/wiki/RecordExtension">Record</a></td>
     </tr>
     <tr>
-        <td><a href="http://git-scm.com/docs/gitk">gitk</a>                                                            </td>
-        <td> <a href="http://mercurial.selenic.com/wiki/HgkExtension">Hgk</a></td>
+        <td><a href="https://git-scm.com/docs/gitk">gitk</a>                                                            </td>
+        <td> <a href="https://mercurial.selenic.com/wiki/HgkExtension">Hgk</a></td>
     </tr>
     <tr>
-        <td><a href="http://fedoraproject.org/wiki/Git_quick_reference#Display_current_branch_in_bash">__git_ps1</a> </td>
-        <td> <a href="http://mercurial.selenic.com/wiki/PromptExtension">Prompt</a></td>
+        <td><a href="https://fedoraproject.org/wiki/Git_quick_reference#Display_current_branch_in_bash">__git_ps1</a> </td>
+        <td> <a href="https://mercurial.selenic.com/wiki/PromptExtension">Prompt</a></td>
     </tr>
     <tr>
-        <td><a href="http://git-scm.com/docs/git-cherry-pick">git cherry-pick</a>                                      </td>
-        <td> <a href="http://mercurial.selenic.com/wiki/TransplantExtension">Transplant</a></td>
+        <td><a href="https://git-scm.com/docs/git-cherry-pick">git cherry-pick</a>                                      </td>
+        <td> <a href="https://mercurial.selenic.com/wiki/TransplantExtension">Transplant</a></td>
     </tr>
     <tr>
-        <td><a href="http://git-scm.com/docs/git-send-email">git send-email</a>                                        </td>
-        <td> <a href="http://mercurial.selenic.com/wiki/PatchbombExtension">PatchBomb</a></td>
+        <td><a href="https://git-scm.com/docs/git-send-email">git send-email</a>                                        </td>
+        <td> <a href="https://mercurial.selenic.com/wiki/PatchbombExtension">PatchBomb</a></td>
     </tr>
     <tr>
-        <td><a href="http://git-scm.com/docs/git-am">git am</a>                                                        </td>
-        <td> <a href="http://mercurial.selenic.com/wiki/MboxExtension">Mbox</a></td>
+        <td><a href="https://git-scm.com/docs/git-am">git am</a>                                                        </td>
+        <td> <a href="https://mercurial.selenic.com/wiki/MboxExtension">Mbox</a></td>
     </tr>
     <tr>
-        <td><a href="http://fiji.sc/Git_topic_branches">Topic branches</a>                                             </td>
-        <td> <a href="http://mercurial.selenic.com/wiki/BookmarksExtension">Bookmarks</a></td>
+        <td><a href="https://fiji.sc/Git_topic_branches">Topic branches</a>                                             </td>
+        <td> <a href="https://mercurial.selenic.com/wiki/BookmarksExtension">Bookmarks</a></td>
     </tr>
     <tr>
-        <td><a href="http://git-scm.com/docs/git-log">Paged log</a>                                                    </td>
-        <td> <a href="http://mercurial.selenic.com/wiki/PagerExtension">Pager</a></td>
+        <td><a href="https://git-scm.com/docs/git-log">Paged log</a>                                                    </td>
+        <td> <a href="https://mercurial.selenic.com/wiki/PagerExtension">Pager</a></td>
     </tr>
 </table></div>{:/}
 
 --------------------------------------------------------------------------------------------------
 
-This [link](http://mercurial.selenic.com/wiki/GitConcepts) has a lot more
+This [link](https://mercurial.selenic.com/wiki/GitConcepts) has a lot more
 information about differences between git and Mercurial, including Mercurial
 counterparts for several git actions.
 
 Mercurial comes with an important feature that there is no equivalent
-in git at all, called [phases](http://mercurial.selenic.com/wiki/Phases).
+in git at all, called [phases](https://mercurial.selenic.com/wiki/Phases).
 I mention it here because you may have problems with it if you (like me)
 do a lot of rebase and history editing. Every commit you push or pull
 to/from a remote repository is considered `public`, which makes it
@@ -136,7 +136,7 @@ I find this feature very annoying and I think it would be better
 implemented as an extension. It sounds Java telling me what I
 can and can't do. You can disable making commits public after
 a push by adding these entries in your
-[hgrc](http://www.selenic.com/mercurial/hgrc.5.html) file:
+[hgrc](https://www.selenic.com/mercurial/hgrc.5.html) file:
 
 ```
     [phases]
@@ -151,7 +151,7 @@ difficult part for me was to understand that Mercurial has no branch
 support like git. Period. Bookmarks are just a hack that tries
 to mimic topic branches, but, technically, a bookmark is not a branch, it is
 more like a tag. I am not going to explain how Bookmarks work, you can learn more
-on it [here](http://mercurial.aragost.com/kick-start/en/bookmarks/).
+on it [here](https://mercurial.aragost.com/kick-start/en/bookmarks/).
 
 The most irritating thing regarding Bookmarks is that changing the history in
 one bookmark can affect other bookmarks as well. In some cases, when you
