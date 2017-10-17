@@ -43,7 +43,7 @@ when coming from git. These extensions will make you feel more comfortable
 while moving from git to Mercurial.
 
 --------------------------------------------------------------------------------------------------
-<table border=1 cellpadding=3>
+{::nomarkdown}<div><table border=1 cellpadding=3>
     <tr>
         <th>git feature</th>
         <th>Mercurial extension</th>
@@ -100,7 +100,8 @@ while moving from git to Mercurial.
         <td><a href="http://git-scm.com/docs/git-log">Paged log</a>                                                    </td>
         <td> <a href="http://mercurial.selenic.com/wiki/PagerExtension">Pager</a></td>
     </tr>
-</table>
+</table></div>{:/}
+
 --------------------------------------------------------------------------------------------------
 
 This [link](http://mercurial.selenic.com/wiki/GitConcepts) has a lot more
