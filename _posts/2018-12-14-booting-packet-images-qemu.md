@@ -2,7 +2,7 @@
 title: 'Running packet.net images in qemu'
 category: linux
 comments: true
-tags: [qemu, linux]
+tags: [qemu, linux, taskcluster]
 ---
 
 For the past months, I have been working on adding Taskcluster support
