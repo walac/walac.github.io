@@ -112,7 +112,7 @@ Ok, finally we can mount our device and extract the image to it:
 ```
 $ mkdir mnt
 $ sudo mount /dev/loop12p1 mnt/
-$ sudo tar -xzf image.tar.gz mnt/
+$ sudo tar -xzf image.tar.gz -C mnt/
 ```
 
 The last step is to install the bootloader. As we are running an Ubuntu image,
