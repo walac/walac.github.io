@@ -5,7 +5,7 @@ comments: true
 tags: [cpp]
 ---
 
-C++ enums historically gave me some headcaches due to the fact that compilers are free to choose the size
+C++ enums historically gave me some headaches due to the fact that compilers are free to choose the size
 of the type for whatever criteria they think. This makes particularly hard to write portable code among
 compilers from ABI point of view (Visual C++ vs C++ Builder, anyone?).
 
