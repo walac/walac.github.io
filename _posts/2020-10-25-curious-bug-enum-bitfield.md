@@ -164,7 +164,7 @@ is because msvc assumes the enum is a signed integer by default and, combined wi
 the use of bit fields, yields the bug. This is precisely what happened in
 [dali-toolkit](https://github.com/dalihub/dali-toolkit).
 
-Once we understood the problem, we can solve it easily forcing the enum to an unsigned integer:
+Once we understood the problem, we can solve it easily by forcing the enum to an unsigned integer:
 
 ```cpp
 enum class Animal: unsigned int {
