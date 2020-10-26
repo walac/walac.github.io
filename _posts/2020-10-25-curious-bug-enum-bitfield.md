@@ -17,7 +17,7 @@ using a background worker thread that is responsible to load the image files to 
 why some textures didn't load in `Windows`. To make the asynchronous loading possible it implements
 a small state machine and it keeps all information about the texture in a type called `TextureInfo`.
 
-Here is the a partial definition of the structure:
+Here is a partial definition of the structure:
 
 ```cpp
 struct TextureInfo {
