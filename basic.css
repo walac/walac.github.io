@@ -1,7 +1,7 @@
 body {
     font-family: "Source Sans Pro", "Calibri", sans-serif;
     font-weight: 200;
-    font-size: calc(.6vmax + .8em);
+    font-size: calc(.5vmax + .5em);
     line-height: 1.4em;
     margin: 0;
     padding: 0 calc(27% - 6em);
