@@ -58,7 +58,7 @@ softirqs last disabled at (10175613): [<ffffffffc18d6aef>] rcutorture_one_extend
 ---[ end trace 0000000000000002 ]--- 
 ```
 
-The log is bigger than that but for this post only this part is worth.
+The log is bigger than that but for this post only this part is worthy.
 The warning reported is from
 [this code fragment](https://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-rt-devel.git/tree/kernel/softirq.c?h=linux-5.12.y-rt-rebase#n173)
 <sup>[1](#ft1)</sup>:
@@ -176,19 +176,19 @@ static void rcutorture_one_extend(int *readstate, int newstate,
 ```
 
 As shown, `rcutorture_one_extend` calls `__local_bh_disable_ip` in more than
-one location. As The functions offsets also appear in the log, finding
+one location. As the functions offsets also appear in the log, finding
 the source code line is straightforward, I will show you how to do it later.
-But what I am really interested is in the values of the variables `statesnew` and
+But what I am really interested is on the values of the variables `statesnew` and
 `statesold` as they control the several conditional calls this function makes.
-Knowing the value of these variables will help
+Knowing the value of these variables will help us on
 getting more informed guesses about the context in which `__local_bh_disable_ip` was called
-when it triggered the warning. So, in the rest of this post I am going to use the
+when it triggered the warning. So, in the rest of this post, I am going to use the
 [crash utility](https://github.com/crash-utility/crash) to reveal the value of
 these variables. `crash` extends
-[gdb](https://www.gnu.org/software/gdb/) so we can be use it to debug kernel and
+[gdb](https://www.gnu.org/software/gdb/) so we can utilize it to debug kernel and
 [kdump](https://en.wikipedia.org/wiki/Kdump_(Linux)) crash files.
 
-I am not going to tell you the procedures to setup `kdump` and generate the `vmcore`
+I am not going to tell you the procedures to set up `kdump` and generate the `vmcore`
 <sup>[2](#ft2)</sup> file, there are plenty of docs around explaining how to do that,
 my focus here is `crash`. You need to use a debug kernel to show the warning and you
 must run `sysctl panic_on_warn=1` to generate a crash dump on warning.
@@ -200,7 +200,7 @@ Assuming you have a `vmlinux` image and a `vmcore` dump, you start `crash` like 
 ```
 
 The `dmesg` command shows what's the content of the kernel messages buffer. Let's use the
-[bt](https://crash-utility.github.io/help_pages/bt.html) command see the call stack trace:
+[bt](https://crash-utility.github.io/help_pages/bt.html) command to see the call stack trace:
 
 ```
 crash> bt -s
@@ -232,10 +232,10 @@ crash>
 In my case, I am using the linux image provided by the `kernel-rt-debug-debuginfo`
 <sup>[3](#ft3)</sup> file. The `-s` option displays the offsets of the functions. By the way,
 typing [help](https://crash-utility.github.io/help.html) shows a summary of the
-available commands and typing `help <cmd>` shows the documentation for the command
+available commands, and typing `help <cmd>` shows the documentation for the command
 `cmd`. `crash` forwards any command not listed there
 to `gdb`. You can also force to route to `gdb` by prefixing the command with
-[gdb](https://crash-utility.github.io/help_pages/gdb.html). Therefore, to diplay the variables
+[gdb](https://crash-utility.github.io/help_pages/gdb.html). Therefore, to display the variables
 we are interested we just set the stack frame to the `rcutorture_one_extend` function
 and print the variables:
 
@@ -303,7 +303,7 @@ crash> dis -l rcutorture_one_extend
 The `-l` option provides the source code line number information. We see that the `1483`
 offset is at `rcutorture.c:1264` and the instruction above is the call we are
 looking for<sup>[4](#ft4)</sup>. Now we can look at the source code to see the
-correspoding line:
+corresponding line:
 
 ```c
 crash> dis -s rcutorture_one_extend
@@ -463,7 +463,7 @@ The stack frame starts at `0xffff8881d2067b38` (remember the stack grows downwar
 The first position corresponds to the `rbp` push at the function preamble,
 we then count 6 positions to the right upwards and we reach the address
 `0xffff8881d2067b08` whose value is `0xffff888300000044`. Since `statesnew` is
-of a `int` type, we only count the first 32 bits and we finally find the
+of an `int` type, we only count the first 32 bits and we finally find the
 value `0x44`. If we look at the
 [kernel/rcu/rcutorture.c](https://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-rt-devel.git/tree/kernel/rcu/rcutorture.c?h=linux-5.13.y-rt-rebase#n60)
 source file, we conclude that `statesnew = RCUTORTURE_RDR_PREEMPT | RCUTORTURE_RDR_ATOM_BH`.
@@ -525,7 +525,7 @@ macro(s) definition(s) for the value, we discover that
 
 ---------------------------------------------------------------------------------
 
-<a name="ft1">1</a>: the watchful reader may find some incosistencies
+<a name="ft1">1</a>: the watchful reader may find some inconsistencies
 among the line numbers reported in the log and in the git tree, that's because
 I am debugging the
 [RHEL](https://www.redhat.com/en/technologies/linux-platforms/enterprise-linux)

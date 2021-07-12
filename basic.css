@@ -4,7 +4,7 @@ body {
     font-size: calc(.5vmax + .5em);
     line-height: 1.4em;
     margin: 0;
-    padding: 0 calc(27% - 6em);
+    padding: 0 calc(20% - 6em);
     background: whitesmoke;
 }
 
