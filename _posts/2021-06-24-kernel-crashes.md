@@ -5,7 +5,7 @@ comments: true
 tags: [linux, kernel, crash]
 ---
 
-Another day I picked a bug reporting that in of the course
+Another day I picked a bug reporting that in the course of the
 [rcutorture](https://www.kernel.org/doc/html/latest/RCU/torture.html) test
 [kernel-rt-debug](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux_for_real_time/8/html-single/installation_guide/index)
 reported some warnings and then the kernel hang:
