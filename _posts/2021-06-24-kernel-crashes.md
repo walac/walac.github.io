@@ -5,7 +5,7 @@ comments: true
 tags: [linux, kernel, crash]
 ---
 
-Another day I picked a bug reporting that in the course of the
+The other day I picked a bug reporting that in the middle of the
 [rcutorture](https://www.kernel.org/doc/html/latest/RCU/torture.html) test
 [kernel-rt-debug](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux_for_real_time/8/html-single/installation_guide/index)
 reported some warnings and then the kernel hang:
@@ -85,7 +85,7 @@ void __local_bh_disable_ip(unsigned long ip, unsigned int cnt)
   ...
 ```
 
-As it shows up in the log, `__local_bh_disable_ip` is called by
+As shown in the log above, `__local_bh_disable_ip` is called by
 [rcutorture_one_extend](https://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-rt-devel.git/tree/kernel/rcu/rcutorture.c?h=linux-5.12.y-rt-rebase#n1410):
 
 ```c
@@ -124,74 +124,30 @@ static void rcutorture_one_extend(int *readstate, int newstate,
   if (statesnew & RCUTORTURE_RDR_ATOM_RBH)
     rcu_read_lock_bh();
   preempt_enable();
-  if (statesnew & RCUTORTURE_RDR_RCU)
-    idxnew = cur_ops->readlock() << RCUTORTURE_RDR_SHIFT;
-
-  /*
-   * Next, remove old protection, in decreasing order of strength
-   * to avoid unlock paths that aren't safe in the stronger
-   * context.  Disable preemption around the ATOM enables in
-   * case the context was only atomic due to IRQ disabling.
-   */
-  preempt_disable();
-  if (statesold & RCUTORTURE_RDR_IRQ)
-    local_irq_enable();
-  if (statesold & RCUTORTURE_RDR_ATOM_BH)
-    local_bh_enable();
-  if (statesold & RCUTORTURE_RDR_ATOM_RBH)
-    rcu_read_unlock_bh();
-  preempt_enable();
-  if (statesold & RCUTORTURE_RDR_PREEMPT)
-    preempt_enable();
-  if (statesold & RCUTORTURE_RDR_SCHED)
-    rcu_read_unlock_sched();
-  if (statesold & RCUTORTURE_RDR_BH)
-    local_bh_enable();
-  if (statesold & RCUTORTURE_RDR_RBH)
-    rcu_read_unlock_bh();
-
-  if (statesold & RCUTORTURE_RDR_RCU) {
-    bool lockit = !statesnew && !(torture_random(trsp) & 0xffff);
-
-    if (lockit)
-      raw_spin_lock_irqsave(&current->pi_lock, flags);
-    cur_ops->readunlock(idxold >> RCUTORTURE_RDR_SHIFT);
-    if (lockit)
-      raw_spin_unlock_irqrestore(&current->pi_lock, flags);
-  }
-
-  /* Delay if neither beginning nor end and there was a change. */
-  if ((statesnew || statesold) && *readstate && newstate)
-    cur_ops->read_delay(trsp, rtrsp);
-
-  /* Update the reader state. */
-  if (idxnew == -1)
-    idxnew = idxold & ~RCUTORTURE_RDR_MASK;
-  WARN_ON_ONCE(idxnew < 0);
-  WARN_ON_ONCE((idxnew >> RCUTORTURE_RDR_SHIFT) > 1);
-  *readstate = idxnew | newstate;
-  WARN_ON_ONCE((*readstate >> RCUTORTURE_RDR_SHIFT) < 0);
-  WARN_ON_ONCE((*readstate >> RCUTORTURE_RDR_SHIFT) > 1);
-}
+...
+...
 ```
 
 As shown, `rcutorture_one_extend` calls `__local_bh_disable_ip` in more than
 one location. As the functions offsets also appear in the log, finding
-the source code line is straightforward, I will show you how to do it later.
+the source code line is straightforward. I will show you how to do it later.
 But what I am really interested is on the values of the variables `statesnew` and
 `statesold` as they control the several conditional calls this function makes.
-Knowing the value of these variables will help us on
-getting more informed guesses about the context in which `__local_bh_disable_ip` was called
-when it triggered the warning. So, in the rest of this post, I am going to use the
+Knowing the value of these variables will help us
+having a better idea about the context in which `__local_bh_disable_ip` was called
+when it triggered the warning.
+
+In the rest of this post, I am going to use the
 [crash utility](https://github.com/crash-utility/crash) to reveal the value of
-these variables. `crash` extends
+these variables. `crash` is an extension of
 [gdb](https://www.gnu.org/software/gdb/) so we can utilize it to debug kernel and
 [kdump](https://en.wikipedia.org/wiki/Kdump_(Linux)) crash files.
 
-I am not going to tell you the procedures to set up `kdump` and generate the `vmcore`
-<sup>[2](#ft2)</sup> file, there are plenty of docs around explaining how to do that,
-my focus here is `crash`. You need to use a debug kernel to show the warning and you
-must run `sysctl panic_on_warn=1` to generate a crash dump on warning.
+I am not going to explain how to set up `kdump` and generate the `vmcore`
+<sup>[2](#ft2)</sup> file since there are plenty of docs around explaining how to do so.
+Our focus here is to exemplify a use case for crash. You need to use a debug kernel
+to show the warning and you must run `sysctl panic_on_warn=1` to generate a
+crash dump on warning.
 
 Assuming you have a `vmlinux` image and a `vmcore` dump, you start `crash` like so:
 
@@ -199,7 +155,8 @@ Assuming you have a `vmlinux` image and a `vmcore` dump, you start `crash` like 
 # crash /usr/lib/debug/lib/modules/4.18.0-311.rt7.92.el8.test.x86_64+debug/vmlinux vmore
 ```
 
-The `dmesg` command shows what's the content of the kernel messages buffer. Let's use the
+The `dmesg` command shows messages from the kernel ring buffer in case you have the `vmcore`
+file but no log dump. Let's use the
 [bt](https://crash-utility.github.io/help_pages/bt.html) command to see the call stack trace:
 
 ```
@@ -229,14 +186,12 @@ PID: 31010  TASK: ffff8882024a3500  CPU: 0   COMMAND: "rcu_torture_rea"
 crash> 
 ```
 
-In my case, I am using the linux image provided by the `kernel-rt-debug-debuginfo`
+In this example, I am using the linux image provided by the `kernel-rt-debug-debuginfo`
 <sup>[3](#ft3)</sup> file. The `-s` option displays the offsets of the functions. By the way,
 typing [help](https://crash-utility.github.io/help.html) shows a summary of the
 available commands, and typing `help <cmd>` shows the documentation for the command
-`cmd`. `crash` forwards any command not listed there
-to `gdb`. You can also force to route to `gdb` by prefixing the command with
-[gdb](https://crash-utility.github.io/help_pages/gdb.html). Therefore, to display the variables
-we are interested we just set the stack frame to the `rcutorture_one_extend` function
+`cmd`. You can use any gdb commands while using `crash`.  Therefore, to display the variables
+we are interested in, set the stack frame to the `rcutorture_one_extend` function
 and print the variables:
 
 ```
@@ -254,20 +209,20 @@ for the loadable modules with the
 ```
 crash> mod -S                                                                                                                                                                                                                                                     
      MODULE       NAME                    SIZE  OBJECT FILE                                                                                                                                                                                                       
-ffffffffc04678c0  dm_mod                397312  /usr/lib/debug/usr/lib/modules/4.18.0-311.rt7.92.el8.test.x86_64+debug/kernel/drivers/md/dm-mod.ko.debug
-ffffffffc047ee00  dm_log                 36864  /usr/lib/debug/usr/lib/modules/4.18.0-311.rt7.92.el8.test.x86_64+debug/kernel/drivers/md/dm-log.ko.debug
-ffffffffc0497a80  dm_region_hash         36864  /usr/lib/debug/usr/lib/modules/4.18.0-311.rt7.92.el8.test.x86_64+debug/kernel/drivers/md/dm-region-hash.ko.debug
-ffffffffc04ae300  dm_mirror              65536  /usr/lib/debug/usr/lib/modules/4.18.0-311.rt7.92.el8.test.x86_64+debug/kernel/drivers/md/dm-mirror.ko.debug
-ffffffffc04c6f80  ip_tables              69632  /usr/lib/debug/usr/lib/modules/4.18.0-311.rt7.92.el8.test.x86_64+debug/kernel/net/ipv4/netfilter/ip_tables.ko.debug
-ffffffffc0545900  sysfillrect            28672  /usr/lib/debug/usr/lib/modules/4.18.0-311.rt7.92.el8.test.x86_64+debug/kernel/drivers/video/fbdev/core/sysfillrect.ko.debug
-ffffffffc054c000  syscopyarea            24576  /usr/lib/debug/usr/lib/modules/4.18.0-311.rt7.92.el8.test.x86_64+debug/kernel/drivers/video/fbdev/core/syscopyarea.ko.debug
-ffffffffc055b340  crc32c_intel           24576  /usr/lib/debug/usr/lib/modules/4.18.0-311.rt7.92.el8.test.x86_64+debug/kernel/arch/x86/crypto/crc32c-intel.ko.debug
-ffffffffc056ee40  mgag200                69632  /usr/lib/debug/usr/lib/modules/4.18.0-311.rt7.92.el8.test.x86_64+debug/kernel/drivers/gpu/drm/mgag200/mgag200.ko.debug
-ffffffffc057adc0  ata_generic            20480  /usr/lib/debug/usr/lib/modules/4.18.0-311.rt7.92.el8.test.x86_64+debug/kernel/drivers/ata/ata_generic.ko.debug
-ffffffffc0583680  t10_pi                 20480  /usr/lib/debug/usr/lib/modules/4.18.0-311.rt7.92.el8.test.x86_64+debug/kernel/block/t10-pi.ko.debug
-ffffffffc0595200  mdio                   28672  /usr/lib/debug/usr/lib/modules/4.18.0-311.rt7.92.el8.test.x86_64+debug/kernel/drivers/net/mdio.ko.debug
-ffffffffc05a55c0  ata_piix               61440  /usr/lib/debug/usr/lib/modules/4.18.0-311.rt7.92.el8.test.x86_64+debug/kernel/drivers/ata/ata_piix.ko.debug
-ffffffffc05aa180  libcrc32c              16384  /usr/lib/debug/usr/lib/modules/4.18.0-311.rt7.92.el8.test.x86_64+debug/kernel/lib/libcrc32c.ko.debug
+ffffffffc04678c0  dm_mod                397312  /usr/lib/debug/usr/lib/modules/.../kernel/drivers/md/dm-mod.ko.debug
+ffffffffc047ee00  dm_log                 36864  /usr/lib/debug/usr/lib/modules/.../kernel/drivers/md/dm-log.ko.debug
+ffffffffc0497a80  dm_region_hash         36864  /usr/lib/debug/usr/lib/modules/.../kernel/drivers/md/dm-region-hash.ko.debug
+ffffffffc04ae300  dm_mirror              65536  /usr/lib/debug/usr/lib/modules/.../kernel/drivers/md/dm-mirror.ko.debug
+ffffffffc04c6f80  ip_tables              69632  /usr/lib/debug/usr/lib/modules/.../kernel/net/ipv4/netfilter/ip_tables.ko.debug
+ffffffffc0545900  sysfillrect            28672  /usr/lib/debug/usr/lib/modules/.../kernel/drivers/video/fbdev/core/sysfillrect.ko.debug
+ffffffffc054c000  syscopyarea            24576  /usr/lib/debug/usr/lib/modules/.../kernel/drivers/video/fbdev/core/syscopyarea.ko.debug
+ffffffffc055b340  crc32c_intel           24576  /usr/lib/debug/usr/lib/modules/.../kernel/arch/x86/crypto/crc32c-intel.ko.debug
+ffffffffc056ee40  mgag200                69632  /usr/lib/debug/usr/lib/modules/.../kernel/drivers/gpu/drm/mgag200/mgag200.ko.debug
+ffffffffc057adc0  ata_generic            20480  /usr/lib/debug/usr/lib/modules/.../kernel/drivers/ata/ata_generic.ko.debug
+ffffffffc0583680  t10_pi                 20480  /usr/lib/debug/usr/lib/modules/.../kernel/block/t10-pi.ko.debug
+ffffffffc0595200  mdio                   28672  /usr/lib/debug/usr/lib/modules/.../kernel/drivers/net/mdio.ko.debug
+ffffffffc05a55c0  ata_piix               61440  /usr/lib/debug/usr/lib/modules/.../kernel/drivers/ata/ata_piix.ko.debug
+ffffffffc05aa180  libcrc32c              16384  /usr/lib/debug/usr/lib/modules/.../kernel/lib/libcrc32c.ko.debug
 ...
 
 ```
@@ -351,8 +306,8 @@ LINE: 1235
 
 The line `1263` is where  we make the call.
 
-As I promised at the beggining, we will now recover the values of the local variables
-`statesnew` and `statesold`. Let's start by looking at the beginning of the
+As promised at the beginning, we will now recover the values of the local variables
+`statesnew` and `statesold`. Let's start by looking at the start of the
 `rcutorture_one_extend` function assembly code:
 
 ```
@@ -394,12 +349,12 @@ crash> dis -l rcutorture_one_extend
 0xffffffffc19f6ef2 <rcutorture_one_extend+98>:  mov    %eax,-0x30(%rbp)
 ```
 
-The only parameters which care are `readstate` and `newstate`.
+The only parameters we care about are `readstate` and `newstate`.
 According to the
 [x86_64 calling convention](https://aaronbloomfield.github.io/pdr/book/x86-64bit-ccc-chapter.pdf),
-they are passed, respectively, in the `edi` and `esi` registers. Below you find
+they are passed, respectively, in the `edi` and `esi` registers. Below is
 a commented version of the `rcutorture_one_extend` function assembly code up
-to the part that set both variables:
+to the part that assigns values to both variables:
 
 ```
 movabs $0xdffffc0000000000,%rax
@@ -441,7 +396,7 @@ mov    %eax,-0x30(%rbp) # statesnew = (int) rbp[-6]
 ```
 
 From the code above, `statesold` ends up in the register `r12d` and `statesnew`
-in the position `rbp-6` (in 64 bits sized chunks) of the stack frame.
+ends in the position `rbp-6` (in 64 bits sized chunks) of the stack frame.
 We shall start deducing the value of `statesnew`. We can take advantage
 of the option `-f` of the [bt](https://crash-utility.github.io/help_pages/bt.html)
 command to display the content of the stack frame:
@@ -462,16 +417,16 @@ crash> bt -f
 The stack frame starts at `0xffff8881d2067b38` (remember the stack grows downwards).
 The first position corresponds to the `rbp` push at the function preamble,
 we then count 6 positions to the right upwards and we reach the address
-`0xffff8881d2067b08` whose value is `0xffff888300000044`. Since `statesnew` is
-of an `int` type, we only count the first 32 bits and we finally find the
+`0xffff8881d2067b08` whose value is `0xffff888300000044`. Since `statesnew` is an
+integer, we only count the first 32 bits and we finally find the
 value `0x44`. If we look at the
 [kernel/rcu/rcutorture.c](https://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-rt-devel.git/tree/kernel/rcu/rcutorture.c?h=linux-5.13.y-rt-rebase#n60)
 source file, we conclude that `statesnew = RCUTORTURE_RDR_PREEMPT | RCUTORTURE_RDR_ATOM_BH`.
 
-`statesold` is stored in the `r12d` register, but we can't rely in register value because
-it probably has already been clobbered buy one of the `rcutorture_one_extend` callees,
-but it must be saved in someone's stack frame. Here is the prologue of the
-`__local_bh_disable_ip`, the first callee:
+`statesold` is stored in the `r12d` register, but we can't rely on the register value because
+it probably has already been clobbered by one of the `rcutorture_one_extend` callees.
+However, it is saved in some function's stack frame. Here is the prologue of the
+`__local_bh_disable_ip`, the first `rcutorture_one_extend` callee:
 
 ```
 crash> dis __local_bh_disable_ip
@@ -486,7 +441,7 @@ crash> dis __local_bh_disable_ip
 ```
 
 Indeed `statesold` is saved in the `__local_bh_disable_ip` stack frame, more
-precisely in `rbp-4`. Below I dump the function stack frame:
+precisely in `rbp-4`. Below is the function stack frame:
 
 ```
 crash> bt -f
@@ -523,10 +478,12 @@ its value is `0x10`. If we do the same exercise of looking for the corresponding
 macro(s) definition(s) for the value, we discover that
 `statesold = RCUTORTURE_RDR_SCHED`.
 
+Thanks to [Julia Denham](https://www.linkedin.com/in/julia-denham-4828a5120/) for the feedback!
+
 ---------------------------------------------------------------------------------
 
 <a name="ft1">1</a>: the watchful reader may find some inconsistencies
-among the line numbers reported in the log and in the git tree, that's because
+among the line numbers reported in the log and in the git tree. This is because
 I am debugging the
 [RHEL](https://www.redhat.com/en/technologies/linux-platforms/enterprise-linux)
 8 kernel.
