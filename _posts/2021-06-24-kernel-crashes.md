@@ -5,10 +5,11 @@ comments: true
 tags: [linux, kernel, crash]
 ---
 
-The other day I picked a bug reporting that in the middle of the
-[rcutorture](https://www.kernel.org/doc/html/latest/RCU/torture.html) test
+The other day I was working on a bug where
 [kernel-rt-debug](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux_for_real_time/8/html-single/installation_guide/index)
-reported some warnings and then the kernel hang:
+reported some warnings in the middle of the
+[rcutorture](https://www.kernel.org/doc/html/latest/RCU/torture.html) test
+followed by a kernel hang:
 
 ```
 rcu_torture_writer: Testing asynchronous GPs. 
@@ -131,15 +132,15 @@ static void rcutorture_one_extend(int *readstate, int newstate,
 As shown, `rcutorture_one_extend` calls `__local_bh_disable_ip` in more than
 one location. As the functions offsets also appear in the log, finding
 the source code line is straightforward. I will show you how to do it later.
-But what I am really interested is on the values of the variables `statesnew` and
-`statesold` as they control the several conditional calls this function makes.
+What I am really interested in is the values of the variables `statesnew` and
+`statesold`, as they control several conditional calls this function makes.
 Knowing the value of these variables will help us
-having a better idea about the context in which `__local_bh_disable_ip` was called
+have a better idea about the context in which `__local_bh_disable_ip` was called
 when it triggered the warning.
 
 In the rest of this post, I am going to use the
 [crash utility](https://github.com/crash-utility/crash) to reveal the value of
-these variables. `crash` is an extension of
+these variables. `Crash` is an extension of
 [gdb](https://www.gnu.org/software/gdb/) so we can utilize it to debug kernel and
 [kdump](https://en.wikipedia.org/wiki/Kdump_(Linux)) crash files.
 
@@ -202,27 +203,27 @@ crash: prohibited gdb command: frame
 ```
 
 Err, you didn't think it would be that easy, did you? Sadly, we will need to do
-it manually. Before anything else, let me instruct `crash` to load the debug symbols
+it manually. Before anything else, let's instruct `crash` to load the debug symbols
 for the loadable modules with the
 [mod](https://crash-utility.github.io/help_pages/mod.html) command:
 
 ```
 crash> mod -S                                                                                                                                                                                                                                                     
      MODULE       NAME                    SIZE  OBJECT FILE                                                                                                                                                                                                       
-ffffffffc04678c0  dm_mod                397312  /usr/lib/debug/usr/lib/modules/.../kernel/drivers/md/dm-mod.ko.debug
-ffffffffc047ee00  dm_log                 36864  /usr/lib/debug/usr/lib/modules/.../kernel/drivers/md/dm-log.ko.debug
-ffffffffc0497a80  dm_region_hash         36864  /usr/lib/debug/usr/lib/modules/.../kernel/drivers/md/dm-region-hash.ko.debug
-ffffffffc04ae300  dm_mirror              65536  /usr/lib/debug/usr/lib/modules/.../kernel/drivers/md/dm-mirror.ko.debug
-ffffffffc04c6f80  ip_tables              69632  /usr/lib/debug/usr/lib/modules/.../kernel/net/ipv4/netfilter/ip_tables.ko.debug
-ffffffffc0545900  sysfillrect            28672  /usr/lib/debug/usr/lib/modules/.../kernel/drivers/video/fbdev/core/sysfillrect.ko.debug
-ffffffffc054c000  syscopyarea            24576  /usr/lib/debug/usr/lib/modules/.../kernel/drivers/video/fbdev/core/syscopyarea.ko.debug
-ffffffffc055b340  crc32c_intel           24576  /usr/lib/debug/usr/lib/modules/.../kernel/arch/x86/crypto/crc32c-intel.ko.debug
-ffffffffc056ee40  mgag200                69632  /usr/lib/debug/usr/lib/modules/.../kernel/drivers/gpu/drm/mgag200/mgag200.ko.debug
-ffffffffc057adc0  ata_generic            20480  /usr/lib/debug/usr/lib/modules/.../kernel/drivers/ata/ata_generic.ko.debug
-ffffffffc0583680  t10_pi                 20480  /usr/lib/debug/usr/lib/modules/.../kernel/block/t10-pi.ko.debug
-ffffffffc0595200  mdio                   28672  /usr/lib/debug/usr/lib/modules/.../kernel/drivers/net/mdio.ko.debug
-ffffffffc05a55c0  ata_piix               61440  /usr/lib/debug/usr/lib/modules/.../kernel/drivers/ata/ata_piix.ko.debug
-ffffffffc05aa180  libcrc32c              16384  /usr/lib/debug/usr/lib/modules/.../kernel/lib/libcrc32c.ko.debug
+ffffffffc04678c0  dm_mod                397312  /usr/.../modules/.../kernel/drivers/md/dm-mod.ko.debug
+ffffffffc047ee00  dm_log                 36864  /usr/.../modules/.../kernel/drivers/md/dm-log.ko.debug
+ffffffffc0497a80  dm_region_hash         36864  /usr/.../modules/.../kernel/drivers/md/dm-region-hash.ko.debug
+ffffffffc04ae300  dm_mirror              65536  /usr/.../modules/.../kernel/drivers/md/dm-mirror.ko.debug
+ffffffffc04c6f80  ip_tables              69632  /usr/.../modules/.../kernel/net/ipv4/netfilter/ip_tables.ko.debug
+ffffffffc0545900  sysfillrect            28672  /usr/.../modules/.../kernel/drivers/video/fbdev/core/sysfillrect.ko.debug
+ffffffffc054c000  syscopyarea            24576  /usr/.../modules/.../kernel/drivers/video/fbdev/core/syscopyarea.ko.debug
+ffffffffc055b340  crc32c_intel           24576  /usr/.../modules/.../kernel/arch/x86/crypto/crc32c-intel.ko.debug
+ffffffffc056ee40  mgag200                69632  /usr/.../modules/.../kernel/drivers/gpu/drm/mgag200/mgag200.ko.debug
+ffffffffc057adc0  ata_generic            20480  /usr/.../modules/.../kernel/drivers/ata/ata_generic.ko.debug
+ffffffffc0583680  t10_pi                 20480  /usr/.../modules/.../kernel/block/t10-pi.ko.debug
+ffffffffc0595200  mdio                   28672  /usr/.../modules/.../kernel/drivers/net/mdio.ko.debug
+ffffffffc05a55c0  ata_piix               61440  /usr/.../modules/.../kernel/drivers/ata/ata_piix.ko.debug
+ffffffffc05aa180  libcrc32c              16384  /usr/.../modules/.../kernel/lib/libcrc32c.ko.debug
 ...
 
 ```
@@ -233,23 +234,23 @@ command to find out the source line where we call `__local_bh_disable_ip`:
 ```
 crash> dis -l rcutorture_one_extend
 /usr/src/debug/kernel-rt-4.18.0-311.rt7.92.el8.test/linux-4.18.0-311.rt7.92.el8.test.x86_64/kernel/rcu/rcutorture.c: 1235
-0xffffffffc19f6e90 <rcutorture_one_extend>:     data32 data32 data32 xchg %ax,%ax [FTRACE NOP]
+<rcutorture_one_extend>:     data32 data32 data32 xchg %ax,%ax [FTRACE NOP]
 /usr/src/debug/kernel-rt-4.18.0-311.rt7.92.el8.test/linux-4.18.0-311.rt7.92.el8.test.x86_64/kernel/rcu/rcutorture.c: 1238
-0xffffffffc19f6e95 <rcutorture_one_extend+5>:   movabs $0xdffffc0000000000,%rax
-0xffffffffc19f6e9f <rcutorture_one_extend+15>:  push   %rbp
+<rcutorture_one_extend+5>:   movabs $0xdffffc0000000000,%rax
+<rcutorture_one_extend+15>:  push   %rbp
 ...
 ...
 ...
 /usr/src/debug/kernel-rt-4.18.0-311.rt7.92.el8.test/linux-4.18.0-311.rt7.92.el8.test.x86_64/./include/linux/bottom_half.h: 19
-0xffffffffc19f7434 <rcutorture_one_extend+1444>:        mov    $0x200,%esi
-0xffffffffc19f7439 <rcutorture_one_extend+1449>:        mov    $0xffffffffc19f7434,%rdi
-0xffffffffc19f7440 <rcutorture_one_extend+1456>:        callq  0xffffffff8aa1aed0 <__local_bh_disable_ip>
-0xffffffffc19f7445 <rcutorture_one_extend+1461>:        jmpq   0xffffffffc19f6f44 <rcutorture_one_extend+180>
-0xffffffffc19f744a <rcutorture_one_extend+1466>:        mov    $0x200,%esi
-0xffffffffc19f744f <rcutorture_one_extend+1471>:        mov    $0xffffffffc19f744a,%rdi
-0xffffffffc19f7456 <rcutorture_one_extend+1478>:        callq  0xffffffff8aa1aed0 <__local_bh_disable_ip>
+<rcutorture_one_extend+1444>:        mov    $0x200,%esi
+<rcutorture_one_extend+1449>:        mov    $0xffffffffc19f7434,%rdi
+<rcutorture_one_extend+1456>:        callq  0xffffffff8aa1aed0 <__local_bh_disable_ip>
+<rcutorture_one_extend+1461>:        jmpq   0xffffffffc19f6f44 <rcutorture_one_extend+180>
+<rcutorture_one_extend+1466>:        mov    $0x200,%esi
+<rcutorture_one_extend+1471>:        mov    $0xffffffffc19f744a,%rdi
+<rcutorture_one_extend+1478>:        callq  0xffffffff8aa1aed0 <__local_bh_disable_ip>
 /usr/src/debug/kernel-rt-4.18.0-311.rt7.92.el8.test/linux-4.18.0-311.rt7.92.el8.test.x86_64/kernel/rcu/rcutorture.c: 1264
-0xffffffffc19f745b <rcutorture_one_extend+1483>:        testb  $0x80,-0x30(%rbp)
+<rcutorture_one_extend+1483>:        testb  $0x80,-0x30(%rbp)
 ...
 ...
 ...
@@ -313,46 +314,46 @@ As promised at the beginning, we will now recover the values of the local variab
 ```
 crash> dis -l rcutorture_one_extend
 /usr/src/debug/kernel-rt-4.18.0-311.rt7.92.el8.test/linux-4.18.0-311.rt7.92.el8.test.x86_64/kernel/rcu/rcutorture.c: 1235
-0xffffffffc19f6e90 <rcutorture_one_extend>:     data32 data32 data32 xchg %ax,%ax [FTRACE NOP]
+<rcutorture_one_extend>:     data32 data32 data32 xchg %ax,%ax [FTRACE NOP]
 /usr/src/debug/kernel-rt-4.18.0-311.rt7.92.el8.test/linux-4.18.0-311.rt7.92.el8.test.x86_64/kernel/rcu/rcutorture.c: 1238
-0xffffffffc19f6e95 <rcutorture_one_extend+5>:   movabs $0xdffffc0000000000,%rax
-0xffffffffc19f6e9f <rcutorture_one_extend+15>:  push   %rbp
-0xffffffffc19f6ea0 <rcutorture_one_extend+16>:  mov    %rsp,%rbp
-0xffffffffc19f6ea3 <rcutorture_one_extend+19>:  push   %r15
-0xffffffffc19f6ea5 <rcutorture_one_extend+21>:  mov    %esi,%r15d
-0xffffffffc19f6ea8 <rcutorture_one_extend+24>:  push   %r14
-0xffffffffc19f6eaa <rcutorture_one_extend+26>:  mov    %rdi,%r14
-0xffffffffc19f6ead <rcutorture_one_extend+29>:  push   %r13
-0xffffffffc19f6eaf <rcutorture_one_extend+31>:  push   %r12
-0xffffffffc19f6eb1 <rcutorture_one_extend+33>:  push   %rbx
-0xffffffffc19f6eb2 <rcutorture_one_extend+34>:  sub    $0x28,%rsp
-0xffffffffc19f6eb6 <rcutorture_one_extend+38>:  mov    %rdx,-0x48(%rbp)
-0xffffffffc19f6eba <rcutorture_one_extend+42>:  mov    %rdi,%rdx
-0xffffffffc19f6ebd <rcutorture_one_extend+45>:  shr    $0x3,%rdx
-0xffffffffc19f6ec1 <rcutorture_one_extend+49>:  mov    %rcx,-0x38(%rbp)
-0xffffffffc19f6ec5 <rcutorture_one_extend+53>:  movzbl (%rdx,%rax,1),%edx
-0xffffffffc19f6ec9 <rcutorture_one_extend+57>:  mov    %rdi,%rax
-0xffffffffc19f6ecc <rcutorture_one_extend+60>:  and    $0x7,%eax
-0xffffffffc19f6ecf <rcutorture_one_extend+63>:  add    $0x3,%eax
-0xffffffffc19f6ed2 <rcutorture_one_extend+66>:  cmp    %dl,%al
-0xffffffffc19f6ed4 <rcutorture_one_extend+68>:  jl     0xffffffffc19f6ede <rcutorture_one_extend+78>
-0xffffffffc19f6ed6 <rcutorture_one_extend+70>:  test   %dl,%dl
-0xffffffffc19f6ed8 <rcutorture_one_extend+72>:  jne    0xffffffffc19f7856 <rcutorture_one_extend+2502>
-0xffffffffc19f6ede <rcutorture_one_extend+78>:  mov    (%r14),%r13d
+<rcutorture_one_extend+5>:   movabs $0xdffffc0000000000,%rax
+<rcutorture_one_extend+15>:  push   %rbp
+<rcutorture_one_extend+16>:  mov    %rsp,%rbp
+<rcutorture_one_extend+19>:  push   %r15
+<rcutorture_one_extend+21>:  mov    %esi,%r15d
+<rcutorture_one_extend+24>:  push   %r14
+<rcutorture_one_extend+26>:  mov    %rdi,%r14
+<rcutorture_one_extend+29>:  push   %r13
+<rcutorture_one_extend+31>:  push   %r12
+<rcutorture_one_extend+33>:  push   %rbx
+<rcutorture_one_extend+34>:  sub    $0x28,%rsp
+<rcutorture_one_extend+38>:  mov    %rdx,-0x48(%rbp)
+<rcutorture_one_extend+42>:  mov    %rdi,%rdx
+<rcutorture_one_extend+45>:  shr    $0x3,%rdx
+<rcutorture_one_extend+49>:  mov    %rcx,-0x38(%rbp)
+<rcutorture_one_extend+53>:  movzbl (%rdx,%rax,1),%edx
+<rcutorture_one_extend+57>:  mov    %rdi,%rax
+<rcutorture_one_extend+60>:  and    $0x7,%eax
+<rcutorture_one_extend+63>:  add    $0x3,%eax
+<rcutorture_one_extend+66>:  cmp    %dl,%al
+<rcutorture_one_extend+68>:  jl     0xffffffffc19f6ede <rcutorture_one_extend+78>
+<rcutorture_one_extend+70>:  test   %dl,%dl
+<rcutorture_one_extend+72>:  jne    0xffffffffc19f7856 <rcutorture_one_extend+2502>
+<rcutorture_one_extend+78>:  mov    (%r14),%r13d
 /usr/src/debug/kernel-rt-4.18.0-311.rt7.92.el8.test/linux-4.18.0-311.rt7.92.el8.test.x86_64/kernel/rcu/rcutorture.c: 1239
-0xffffffffc19f6ee1 <rcutorture_one_extend+81>:  mov    %r15d,%r12d
-0xffffffffc19f6ee4 <rcutorture_one_extend+84>:  not    %r12d
-0xffffffffc19f6ee7 <rcutorture_one_extend+87>:  mov    %r13d,%eax
-0xffffffffc19f6eea <rcutorture_one_extend+90>:  and    %r13d,%r12d
-0xffffffffc19f6eed <rcutorture_one_extend+93>:  not    %eax
-0xffffffffc19f6eef <rcutorture_one_extend+95>:  and    %r15d,%eax
-0xffffffffc19f6ef2 <rcutorture_one_extend+98>:  mov    %eax,-0x30(%rbp)
+<rcutorture_one_extend+81>:  mov    %r15d,%r12d
+<rcutorture_one_extend+84>:  not    %r12d
+<rcutorture_one_extend+87>:  mov    %r13d,%eax
+<rcutorture_one_extend+90>:  and    %r13d,%r12d
+<rcutorture_one_extend+93>:  not    %eax
+<rcutorture_one_extend+95>:  and    %r15d,%eax
+<rcutorture_one_extend+98>:  mov    %eax,-0x30(%rbp)
 ```
 
 The only parameters we care about are `readstate` and `newstate`.
 According to the
 [x86_64 calling convention](https://aaronbloomfield.github.io/pdr/book/x86-64bit-ccc-chapter.pdf),
-they are passed, respectively, in the `edi` and `esi` registers. Below is
+they are passed, respectively, in the `rdi` and `rsi` registers. Below is
 a commented version of the `rcutorture_one_extend` function assembly code up
 to the part that assigns values to both variables:
 
@@ -415,8 +416,8 @@ crash> bt -f
 ```
 
 The stack frame starts at `0xffff8881d2067b38` (remember the stack grows downwards).
-The first position corresponds to the `rbp` push at the function preamble,
-we then count 6 positions to the right upwards and we reach the address
+The first position corresponds to the `rbp` push at the function preamble.
+We then count 6 positions upwards to the right and reach the address
 `0xffff8881d2067b08` whose value is `0xffff888300000044`. Since `statesnew` is an
 integer, we only count the first 32 bits and we finally find the
 value `0x44`. If we look at the
@@ -430,13 +431,13 @@ However, it is saved in some function's stack frame. Here is the prologue of the
 
 ```
 crash> dis __local_bh_disable_ip
-0xffffffff8aa1aed0 <__local_bh_disable_ip>:     data32 data32 data32 xchg %ax,%ax [FTRACE NOP]
-0xffffffff8aa1aed5 <__local_bh_disable_ip+5>:   push   %rbp
-0xffffffff8aa1aed6 <__local_bh_disable_ip+6>:   mov    %rsp,%rbp
-0xffffffff8aa1aed9 <__local_bh_disable_ip+9>:   push   %r15
-0xffffffff8aa1aedb <__local_bh_disable_ip+11>:  push   %r14
-0xffffffff8aa1aedd <__local_bh_disable_ip+13>:  push   %r13
-0xffffffff8aa1aedf <__local_bh_disable_ip+15>:  push   %r12
+<__local_bh_disable_ip>:     data32 data32 data32 xchg %ax,%ax [FTRACE NOP]
+<__local_bh_disable_ip+5>:   push   %rbp
+<__local_bh_disable_ip+6>:   mov    %rsp,%rbp
+<__local_bh_disable_ip+9>:   push   %r15
+<__local_bh_disable_ip+11>:  push   %r14
+<__local_bh_disable_ip+13>:  push   %r13
+<__local_bh_disable_ip+15>:  push   %r12
 ...
 ```
 
@@ -478,7 +479,8 @@ its value is `0x10`. If we do the same exercise of looking for the corresponding
 macro(s) definition(s) for the value, we discover that
 `statesold = RCUTORTURE_RDR_SCHED`.
 
-Thanks to [Julia Denham](https://www.linkedin.com/in/julia-denham-4828a5120/) for the feedback!
+Thanks to [Julia Denham](https://www.linkedin.com/in/julia-denham-4828a5120/) for
+taking the time to review this post!
 
 ---------------------------------------------------------------------------------
 
