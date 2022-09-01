@@ -1,6 +1,6 @@
 body {
     font-family: "Source Sans Pro", "Calibri", sans-serif;
-    font-weight: 200;
+    font-weight: 320;
     font-size: calc(.5vmax + .5em);
     line-height: 1.4em;
     margin: 0;
@@ -62,7 +62,7 @@ body > header, body > footer {
 article {
     padding-top: 2em;
     padding-bottom: 2em;
-    background: white;
+    background: #eaeaea;
     border-top: 1px solid gainsboro;
 }
 
