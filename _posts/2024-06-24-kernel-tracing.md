@@ -349,7 +349,7 @@ here<sup>[2](#ft3)</sup>. According to the
 [x86_64 calling convention](https://wiki.osdev.org/System_V_ABI#x86-64),
 it holds the function first argument. In our case, `dl_se`. Also, we had
 to specify the type `s32` for pid and usage parameters. If you don't specify
-a type, the default type is `x64`. `s32` means *signded 32 bits*. Let's use
+a type, the default type is `x64`. `s32` means *signed 32 bits*. Let's use
 our new custom probe:
 
 ```sh
@@ -391,8 +391,8 @@ here are some valuable resources:
 but in practice the differences don't matter.
 
 <a name="ft2">1</a>: you need the kernel debug symbols installed. For
-RHEL base systems, install it using `dnf install -y kerne-debuginfo`.
+RHEL base systems, install it using `dnf install -y kernel-debuginfo`.
 
-<a name="ft3">2</a>: the probe syntaxs does not make a difference between
+<a name="ft3">2</a>: the probe syntax does not make a difference between
 `rdi` and `edi`. You just specify `di`. The same thing applies to the
 other registers.
