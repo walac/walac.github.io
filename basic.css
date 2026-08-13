@@ -1,3 +1,29 @@
+:root {
+    --bg: whitesmoke;
+    --text: black;
+    --muted: dimgray;
+    --link: royalblue;
+    --link-hover: gray;
+    --header-footer-bg: black;
+    --header-footer-fg: white;
+    --article-bg: #eaeaea;
+    --article-border: gainsboro;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #1a1a1a;
+        --text: #e8e8e8;
+        --muted: #a8a8a8;
+        --link: #6ea8fe;
+        --link-hover: #cfcfcf;
+        --header-footer-bg: #0d0d0d;
+        --header-footer-fg: #e8e8e8;
+        --article-bg: #242424;
+        --article-border: #3a3a3a;
+    }
+}
+
 body {
     font-family: "Source Sans Pro", "Calibri", sans-serif;
     font-weight: 320;
@@ -5,7 +31,8 @@ body {
     line-height: 1.4em;
     margin: 0;
     padding: 0 calc(20% - 6em);
-    background: whitesmoke;
+    background: var(--bg);
+    color: var(--text);
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -17,12 +44,12 @@ h1, h2, h3, h4, h5, h6 {
 
 a, a#selected {
     transition: color .2s ease-out;
-    color: royalblue;
+    color: var(--link);
     text-decoration: none;
 }
 
 a:hover {
-    color: gray;
+    color: var(--link-hover);
 }
 
 h1 a {
@@ -42,7 +69,7 @@ pre {
 }
 
 blockquote {
-    border-left: 5px solid royalblue;
+    border-left: 5px solid var(--link);
     margin: 0;
     padding: 0 1em;
 }
@@ -55,15 +82,15 @@ body > header, article, body > footer {
 body > header, body > footer {
     padding-top: 1em;
     padding-bottom: 1em;
-    background: black;
-    color: white;
+    background: var(--header-footer-bg);
+    color: var(--header-footer-fg);
 }
 
 article {
     padding-top: 2em;
     padding-bottom: 2em;
-    background: #eaeaea;
-    border-top: 1px solid gainsboro;
+    background: var(--article-bg);
+    border-top: 1px solid var(--article-border);
 }
 
 article header {
@@ -71,7 +98,7 @@ article header {
 }
 
 article header p {
-    color: dimgray;
+    color: var(--muted);
 }
 
 article footer a::after {
