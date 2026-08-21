@@ -7,10 +7,11 @@ categories: [kernel]
 * TOC
 {:toc}
 
+# Introduction
+
 This tutorial explains Linux kernel “jump labels” — also called “static
-keys” — from first principles, using the actual source in this tree
-(upstream v7.2) as the reference. **x86_64** is the architecture covered
-throughout.
+keys” — from first principles. The code is based on the kernel 7.2 tree.
+**x86_64** is the architecture covered throughout.
 
 It is meant to be readable even if you have never touched kernel text
 patching before. The early sections lay down the CPU and
