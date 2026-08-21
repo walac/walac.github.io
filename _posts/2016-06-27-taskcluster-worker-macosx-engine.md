@@ -9,7 +9,7 @@ In this quarter, I worked on implementing the
 [taskcluster-worker](https://blog.gregarndt.com/taskcluster/2016/03/24/birth-of-new-worker/)
 Mac OSX engine. Before talking about this specific implementation,
 let me explain what a worker is and how taskcluster-worker differs from
-[docker-worker](https://github.com/taskcluster/docker-worker), the currently
+[docker-worker](https://github.com/taskcluster/docker-worker), the current
 main worker in
 [Taskcluster](https://yourdomain.com/mozilla,%20ci/2014/03/04/taskcluster.html).
 
@@ -17,22 +17,22 @@ The role of a Taskcluster worker
 ================================
 
 When a user submits a task graph to Taskcluster,
-contrary to the common sense (at least if you are used on how OSes
+contrary to common sense (at least if you are used to how OS
 schedulers usually work), these tasks are submitted to the scheduler first,
-which is responsible to process dependencies and enqueue them. In the
+which is responsible for processing dependencies and enqueue them. In the
 [Taskcluster manual page](https://docs.taskcluster.net/manual) there is a
-clear picture ilustrating this concept.
+clear picture illustrating this concept.
 
-The provisioner is responsible for looking at the queue and determine how
+The provisioner is responsible for looking at the queue and determining how
 many pending tasks exist and, based on that, it launches worker instances to
 run these tasks.
 
 Then comes the figure of the worker. The worker is responsible for actually
-executing the task. It claims a task from the queue, runs it, upload the
+executing the task. It claims a task from the queue, runs it, uploads the
 generated artifacts and submits the status of the finished task, using the
 [Taskcluster APIs](https://docs.taskcluster.net/manual/apis).
 
-`docker-worker` is a worker that runs task command inside a docker container.
+`docker-worker` is a worker that runs task commands inside a docker container.
 The task payload specifies a [docker](https://www.docker.com/what-docker)
 image as well as a command line to run, among other environment parameters.
 docker-worker pulls the specified docker image and runs task commands inside it.
@@ -60,22 +60,22 @@ of task isolation. For docker-worker, each task ran in its own docker container
 so tasks were isolated by definition. But there is no such thing as a container
 for OSX engine. Our earlier tries with
 [chroot](https://en.wikipedia.org/wiki/Chroot) failed miserably, due to
-incompatibilities with OSX graphic system. Our final solution was to create a new user
+incompatibilities with the OSX graphics system. Our final solution was to create a new user
 on the fly and run the task with this user's credentials. This not only provides
 some task isolation, but also prevents privilege escalation attacks by running
-tasks with different user than the worker.
+tasks with a different user than the worker.
 
 Instead of dealing with the poorly documented
 [Open Directory Framework](https://developer.apple.com/library/mac/documentation/Networking/Conceptual/Open_Directory/Introduction/Introduction.html),
 we chose to spawn the
 [dscl](https://developer.apple.com/legacy/library/documentation/Darwin/Reference/ManPages/man1/dscl.1.html)
-command to create and configure users. Tasks usually takes a long time to
-execute, spawning loads of subprocess, so a few spawns of the `dscl` command
+command to create and configure users. Tasks usually take a long time to
+execute, spawning loads of subprocesses, so a few spawns of the `dscl` command
 won't have any practical performance impact.
 
-One final aspect is how we bootstrap task execution. A tasks boils down to
+One final aspect is how we bootstrap task execution. A task boils down to
 a script that executes task duties. But where does this script come from?
-It doesn't live in the machine that executes the worker. OSX engine provides a
+It doesn't live on the machine that executes the worker. OSX engine provides a
 `link` field in task payload that a task can specify an executable to download and
 execute.
 
@@ -83,8 +83,8 @@ Running the worker
 ==================
 
 OSX engine will primarily be used to execute Firefox tests on Mac OSX,
-and the environment is expected to have a very specific tools and
-configurations set. Because of that, I am testing the code on a
+and the environment is expected to have a very specific set of tools and
+configurations. Because of that, I am testing the code on a
 [loaner machine](https://wiki.mozilla.org/ReleaseEngineering/How_To/Loan_a_Slave).
 To start the worker, it is just a matter of opening a terminal and typing:
 
@@ -92,8 +92,8 @@ To start the worker, it is just a matter of opening a terminal and typing:
 $ ./taskcluster-worker work macosx --logging-level debug
 ```
 
-The worker connects to the Taskcluster queue, claims and execute the tasks available.
-At the time I am writing, all tests but *Firefox UI functional* tests" were green,
+The worker connects to the Taskcluster queue, claims and executes the available tasks.
+At the time I am writing, all tests but *Firefox UI functional* tests were green,
 running on optimized Firefox OSX builds. We intend to land Firefox tests in taskcluster-worker as
 [Tier-2](https://developer.mozilla.org/en-US/docs/Supported_build_configurations) on next quarter,
 running them in parallel with Buildbot.

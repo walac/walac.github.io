@@ -5,8 +5,8 @@ comments: true
 tags: [linux, kernel, tty]
 ---
 
-It is incredible how we can find room for improvement even in the eldest
-and battle-tested codebases out there. This post is about one of these
+It is incredible how we can find room for improvement even in the oldest
+and most battle-tested codebases out there. This post is about one of these
 cases.
 
 I was investigating a [soft lockup](https://is.gd/AasYhu) bug report which
@@ -81,7 +81,7 @@ Call Trace:
  </IRQ>
 ```
 
-Notice `printk()` and (in special) `console_unlock()` in the stack trace.
+Notice `printk()` and (in particular) `console_unlock()` in the stack trace.
 This is not a coincidence. It happened every single time.
 
 I found out that `scsi_debug` sends a lot of information to the console output,
@@ -140,7 +140,7 @@ Attaching 3 probes...
 a character to the serial port. We count how many times we call it per
 second.
 
-Maybe the tracing machinery is causing an overhead, jeopardizing
+Maybe the tracing machinery is causing overhead, jeopardizing
 the serial performance? Let's try another approach:
 
 ```sh
@@ -269,12 +269,12 @@ $ trace-cmd report
 
 So, it takes 411 us to send just one single byte.
 The function [serial8250_console_write()](https://is.gd/EfkkTZ)
-is the one responsible to dispatch the TTY data to the serial port (it
+is the one responsible for dispatching the TTY data to the serial port (it
 calls `uart_console_write()`). It writes a character and waits for the
 chip controller to process the data before sending the next. Modern
 serial controllers have a FIFO of at least 16 bytes. Maybe we can
 exploit that and improve the situation. Well, that is what
-[I did](https://is.gd/pk2Yje). Let's how things go now:
+[I did](https://is.gd/pk2Yje). Let's see how things go now:
 
 ```sh
 $ time ./sertest -n 2500 /dev/serco
@@ -334,12 +334,12 @@ us to reply. That is the reason we can't get the expected speed of 115200 bps
 for such an amount of data.
 
 We see a 25% throughput boost when working with the original
-`modprobe sci_debug` scenario. Even though we could not reach
+`modprobe scsi_debug` scenario. Even though we could not reach
 maximum performance, we improved things considerably.
 
 
 <a name="ft1">1</a>: `console_unlock()` will flush the `printk()` ring
 buffer before unlocking the console.
 
-<a name="ft2">1</a>: This behavior is vital to ensure essential
+<a name="ft2">2</a>: This behavior is vital to ensure essential
 information flushes from the ring buffer in the case of fatal errors.

@@ -11,7 +11,7 @@ find hot spots in your app.  The process is made easy by the
 a profile file for upload to the
 [Cleopatra](https://people.mozilla.org/~bgirard/cleopatra/) application.
 
-Earlier, you had to build your own Firefox OS image to use `profile.sh`
+Earlier, you had to build your own Firefox OS image to use the `profile.sh`
 tool, but that's no longer the case. Thanks to
 [Snappy symbolication server](https://github.com/vdjeric/Snappy-Symbolication-Server),
 you can grab a [Mozilla nightly](https://ftp.mozilla.org/pub/mozilla.org/b2g/nightly/)
@@ -23,7 +23,7 @@ it in the [developer menu](https://tinyurl.com/fxosdevmenu). You also need an
 engineering build image of your device (images with `-eng` suffix).
 
 In this post, I am going into the steps to get a profile stack trace for your app.
-In a few words, you have to follow a some steps:
+In a few words, you have to follow some steps:
 
 1. Start the b2g process and your application with profile support.
 
@@ -79,9 +79,9 @@ Pulling profile data from the devices is performed by running
 is symbol resolution. `profile capture` provides the `-s`
 option which allows you to pass the URL of the
 [symbolication server](https://github.com/vdjeric/Snappy-Symbolication-Server),
-that perform symbol resolution.
+that performs symbol resolution.
 
-For Firefox OS oficial builds, you can use the
+For Firefox OS official builds, you can use the
 [Mozilla symbolication server](https://symbolapi.mozilla.org):
 
 ```bash
@@ -110,7 +110,7 @@ creates a merged file called `profile_captured.sym`. After that, you can
 
 ## Symbol resolution through breakpad symbols
 
-That's not the end of the story. Symbolication server makes use of the
+That's not the end of the story. The symbolication server makes use of the
 [google-breakpad](https://code.google.com/p/google-breakpad/) symbol files
 for symbol resolution. Firefox already uses breakpad for the crash reporting
 system. When you build your own B2G image, you use the `build.sh` script,
@@ -136,10 +136,10 @@ can profile it.
 
 ## Conclusion
 
-This post was intented to be a brief tutorial on how to get profiles for your app
+This post was intended to be a brief tutorial on how to get profiles for your app
 without building your own Firefox OS image. Currently, `profile.sh` is shipped
 with private builds only, and it will
-[eventually ships with Nightly too](https://bugzilla.mozilla.org/show_bug.cgi?id=1078369).
+[eventually ship with Nightly too](https://bugzilla.mozilla.org/show_bug.cgi?id=1078369).
 
 If you have any doubts, ping [me](https://mozillians.org/en-US/u/wcosta/)
-on [#fxos-automation](https://www.standu.ps/project/fxos-automation) room.
+in the [#fxos-automation](https://www.standu.ps/project/fxos-automation) room.

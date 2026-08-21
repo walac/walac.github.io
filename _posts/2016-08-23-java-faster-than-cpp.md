@@ -5,12 +5,12 @@ comments: true
 tags: [cpp]
 ---
 
-Some days ago, a friend emailed me desperated because a Java code
+Some days ago, a friend emailed me desperate because a Java code
 was faster than his C++ implementation. These *Java faster than C++* claims
 were very common when Java was the tech companies fashion language. I never
 liked Java because I always thought it was quite verbose (however, I never tried
 the new functional constructions in Java 8) and used to be very heavy. I mean,
-I could recognize that an app was written in Java in a blink of eyes, just by looking
+I could recognize that an app was written in Java in the blink of an eye, just by looking
 how slow it was. Things have changed since, but as I was never a professional
 Java programmer, I didn't follow the language evolution.
 
@@ -20,7 +20,7 @@ Back to the post, the code in question is a
 on [Sedgewick's Java version](https://algs4.cs.princeton.edu/code/edu/princeton/cs/algs4/Huffman.java.html).
 If you want to profile on your own, you can clone his repo (as he already merged
 my patches, you'll need to rewind git history a bit to profile the old code). You can find instructions
-on how install the Java code [here](https://algs4.cs.princeton.edu/code/).
+on how to install the Java code [here](https://algs4.cs.princeton.edu/code/).
 
 Let's get it started by using the simple [time](https://man7.org/linux/man-pages/man1/time.1.html) command.
 In this test, we are measuring the time to compress and decompress
@@ -65,8 +65,8 @@ the source code, the heap allocations were quite suspicious, but after some
 experiments I realized this was not the case, then I started to profile the code.
 If you know me, you also know I am a very keen Linux user, but I had to switch to
 Mac OS X for a [project](https://walac.github.io/taskcluster-worker-macosx-engine/) I am working
-on at Mozilla. As I have no much experience on Mac development, and that includes
-native tools, I made some google research and came across
+on at Mozilla. As I don't have much experience with Mac development, and that includes
+native tools, I did some Google research and came across
 [Instruments](https://developer.apple.com/library/watchos/documentation/DeveloperTools/Conceptual/InstrumentsUserGuide/index.html).
 After some painful time trying to use it inside [Xcode](https://www.wnd.com/files/2015/03/poop-emoji-emoticon-600-300x300.jpg),
 I came back to google and found
@@ -95,7 +95,7 @@ std::string data(
 );
 ```
 
-The problem lies on using [std::cin](https://www.cplusplus.com/reference/iostream/cin/)
+The problem lies in using [std::cin](https://www.cplusplus.com/reference/iostream/cin/)
 to read the file. ISO C++11 says that standard streams objects must be thread safe,
 that means a mutex lock/unlock operation is executed each time the internal I/O buffer
 is accessed. In the code above, a mutex is locked for each character read,
@@ -125,7 +125,7 @@ sys  0m0.007s
 
 ![Not Bad](/images/cppjava/notbad.jpg)
 
-Can we make this better? Hrm, lets profile it one more time, but this time,
+Can we make this better? Hrm, let's profile it one more time, but this time,
 we will profile decompression, since it is still slower than its Java
 counterpart:
 
@@ -138,8 +138,8 @@ we see it uses [std::shared_ptr](https://en.cppreference.com/w/cpp/memory/shared
 the nodes for the Huffman tree. As you might know, `shared_ptr` provides a
 smart pointer with a thread safe, reference counted, copy semantics. The code is single
 threaded, so this thread safe reference counting is a waste of resources, but the point
-is that `shared_ptr` is thread safe, and not going to suggest to implement a single
-thread version of it. What do we do? Well, a careful review on the code shows that we
+is that `shared_ptr` is thread safe, and I'm not going to suggest implementing a single-threaded
+version of it. What do we do? Well, a careful review of the code shows that we
 actually don't need a smart pointer with copy semantics, the pointer is never shared,
 but transferred from one owner to another, so what we need is
 [moving semantics](https://tinyurl.com/d74bmox), and we have a perfect smart pointer
@@ -170,10 +170,10 @@ Wow! Decompression now, compared to the original code, is 193% faster!
 
 C++ code got a lot faster, and we achieved this with only intelligent use of the
 standard C++ library, no need to implement lock free data structures, or fancy
-algorithms or either special processor features. Sometimes, less is more.
+algorithms or even special processor features. Sometimes, less is more.
 If you want to take a look at the actual source code, you can visit
 [my pull request](https://github.com/Spagiari/Stream-Data-Compactor/pull/4) (there is
-an extra commit reversing a flawed attempt to optimizes the code preserving `std::cin`).
+an extra commit reversing a flawed attempt to optimize the code preserving `std::cin`).
 If I was asked to try to make the code even faster, I would give
 [file mapping](https://en.wikipedia.org/wiki/Memory-mapped_file) a try, since
 file I/O seems to be the bottleneck here. Maybe I do that in the future, and publish the

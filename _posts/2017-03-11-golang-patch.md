@@ -13,8 +13,8 @@ read [this post](https://walac.github.io/taskcluster-worker-macosx-engine/).
 
 In the `taskcluster-worker` task payload, there is a field called `command`,
 that specifies the command the task must run. Through a configuration file,
-you can specify either the spawned command should run as the current user
-or to run the command with a newly created user. The pseudo code bellow
+you can specify whether the spawned command should run as the current user
+or with a newly created user. The pseudo code below
 illustrates how this works:
 
 ```go
@@ -32,18 +32,17 @@ if createUser {
 }
 ```
 
-Our first production use for `taskcluster-worker` it to run Firefox automated
+Our first production use for `taskcluster-worker` is to run Firefox automated
 tests inside the OSX environment. We began configuring `taskcluster-worker` to
 run each task with a new user to provide some kind of task isolation, but it
-didn't work well. Some tests, as you might wonder, require we run the browser
+didn't work well. Some tests, as you might expect, require that we run the browser
 UI inside a desktop session. To allow this, the taskcluster-worker daemon runs
 as a
 [Launch Agent](https://developer.apple.com/library/content/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html).
 The problem is that the test itself runs as a different user, under the desktop
 session owned by the taskcluster-worker user. As the user that runs Firefox is
 different from the user owning the desktop session, the tests weren't allowed
-to execute several operations, like clipboard copy/paste. Because of this that
-we introduced the option to run the test as the current user.
+to execute several operations, like clipboard copy/paste. Because of this, we introduced the option to run the test as the current user.
 
 When implementing the option to run tasks as the current user, I found
 a subtle problem with Go process creation package, described next.
@@ -85,7 +84,7 @@ hello-world
 ```
 
 So far so good. You can also set the user in which the process will run.
-Let's demonstrate it by expliciting setting the current user as the user
+Let's demonstrate it by explicitly setting the current user as the user
 account of the child process:
 
 ```go
@@ -131,7 +130,7 @@ func main() {
 }
 ```
 
-The `exec.Cmd` structure accepts a system specific
+The `exec.Cmd` structure accepts a system-specific
 [`SysProcAttr`](https://golang.org/pkg/syscall/#SysProcAttr)
 structure pointer, which has a
 [`Credential`](https://golang.org/pkg/syscall/#Credential) field used to
@@ -146,7 +145,7 @@ fork/exec /bin/echo: operation not permitted
 
 ![What?](/images/golangpatch/what.jpeg)
 
-Wait! Can't we run a process with our own account??? This is non-sense.
+Wait! Can't we run a process with our own account??? This is nonsense.
 Let's investigate the root cause of this weird behavior. A system
 call must be returning `EPERM` and causing the whole thing to collapse.
 We can use [`dtrace`](https://dtrace.org/blogs/about/) to discover
@@ -198,7 +197,7 @@ if cred := sys.Credential; cred != nil {
 
 The reason is that the `Credential` struct has a `Groups` field representing an
 array of supplementary group ids to pass to `setgroups`, and when
-`Credential != nil`, `setgroups` gets always called, even if didn't set the
+`Credential != nil`, `setgroups` gets always called, even if you didn't set the
 `Groups` property. And that's where the problem lies,  you can't set
 process user and group id without issuing a call to `setgroups`. The solution
 is to find a way to say "don't bother with supplementary groups".
@@ -212,7 +211,7 @@ is, above all, a security problem.
 
 # Attempt #2: don't call `setgroups` if `Groups == nil`
 
-After the security concern, my idea was to distinguish a empty group
+After the security concern, my idea was to distinguish an empty group
 (`[]uint32{}`) from a `nil` group. If `Groups == nil`, we skip
 `setgroups`, otherwise we call it. This removes the previous issue,
 but introduces another: it subtly breaks backward compatibility.
@@ -221,7 +220,7 @@ always try to clear supplementary groups, now it doesn't.
 
 # Attempt #3: call `setgroups` only if `Groups` and `getgroups` mismatch
 
-One of the code reviewers suggested to call
+One of the code reviewers suggested calling
 [`getgroups`](https://linux.die.net/man/2/getgroups) to get the
 current set of supplementary groups and only call `setgroups` if the
 current and new groups set mismatch. Implementing this was trickier than
@@ -282,7 +281,7 @@ if cred := sys.Credential; cred != nil {
 ```
 
 This is a classic linear time array mismatch algorithm implemented
-in the `groupsMismatch` function. By definition, the array of groups are
+in the `groupsMismatch` function. By definition, the array of groups is
 unique, so we don't have to worry about duplicated values. When the current
 supplementary group set is different from the new one, we call `setgroups`
 to apply the new group set. When we run it:
@@ -341,7 +340,7 @@ the parent process, like memory values and files opened. But what if a
 multithreaded process calls `fork`? The answer is that only the thread that
 invoked the system call is copied to the child process, but the state of the global
 memory remains the same, and that includes the state of mutexes and semaphores
-held in another thread. That means you can execute a very restrict set of
+held in another thread. That means you can execute a very restricted set of
 operations in the child process. Allocating memory from the heap is dangerous,
 as the heap is often protected by a mutex, and another thread could be in the
 middle of a heap allocation when the process was forked. Trying to allocate
@@ -367,9 +366,9 @@ In the end, to implement this patch I had to declare a global
 entries large) and implemented an \\(O(n^2)\\) but constant
 space matching algorithm.
 
-It turns out it actually didn't reach its goal, because often a new
+It turns out that it actually didn't achieve its goal, because often a new
 child process inherits the parent's supplementary groups. Therefore, even
-so the caller doesn't care about supplementary groups, `setgroups`
+if the caller doesn't care about supplementary groups, `setgroups`
 can be called anyway.
 
 # Accepted solution: define a new member in the `Credential` struct
@@ -377,13 +376,13 @@ can be called anyway.
 After all previous attempts, I admitted defeat and added a `NoSetGroups`
 member to the `Credential` struct so that when it is `true`,
 it skips supplementary groups management.
-In a ideal world it would be called `SetGroups` with the logic inverted,
+In an ideal world it would be called `SetGroups` with the logic inverted,
 but I had to do so in order to preserve backward compatibility.
 
 If you are curious about the final patch, just look at the
 [git commit](https://github.com/golang/go/commit/79f6a5c7bd684f2e6007ee505b522440beb86bf0).
 
 By the end of the day, it is just astonishing how a subtle issue with
-a so simple patch yielded so much trouble. Finding the
+such a simple patch yielded so much trouble. Finding the
 perfect solution is often almost impossible, but even finding a good
 one isn't that simple.

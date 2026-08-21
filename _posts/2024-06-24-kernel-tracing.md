@@ -6,16 +6,16 @@ tags: [kernel, trace]
 ---
 
 Disclaimer: this is a mental note in the form of a blog
-post for future references. Most of it is a summary
+post for future reference. Most of it is a summary
 of a debug session to solve
 [this issue](https://lore.kernel.org/all/171983202713.2215.17043038912457274824.tip-bot2@tip-bot2/).
 
-Kernel is one of hardest piece of software to debug. Although it has some
+The kernel is one of the hardest pieces of software to debug. Although it has some
 limited support for a
 [classical debug session](https://www.kernel.org/doc/html/latest/dev-tools/gdb-kernel-debugging.html),
 it is often impractical. Not surprisingly, over the years, kernel hackers
 developed a lot of tools to aid the art of debugging the Linux kernel.
-Tracing tool are among the most useful techniques.
+Tracing tools are among the most useful techniques.
 
 Tracing is a technique used to monitor the live kernel in real-time, involving 
 a logging mechanism to record kernel activity. In this post, we will provide 
@@ -180,7 +180,7 @@ tracepoints to log information. These probes can be attached to almost any
 kernel address, including functions and their entry/exit points.
 
 To create a probe, you can write directly to the tracing filesystem, but
-I rather prefer to use
+I prefer to use
 [perf-probe](https://man7.org/linux/man-pages/man1/perf-probe.1.html)<sup>[1](#ft1)</sup>.
 
 A few weeks ago I was debugging a
@@ -201,7 +201,7 @@ Added new event:
 $ trace-cmd record -e probe:start_dl_timer sleep 1
 ```
 
-Notice that, by default, `perf-probe` put the probe inside the "probe" group.
+Notice that, by default, `perf-probe` puts the probe inside the "probe" group.
 This is all good but doesn't give much information. We would like to know the PID,
 `task_struct` reference count and the timer object to relate to the hrtimer tracepoints.
 `start_dl_timer` receives a pointer to
@@ -269,7 +269,7 @@ $ perf probe -L start_dl_timer
 The `-L` option lists the source code line numbers where we can install
 the probe hook<sup>[2](#ft2)</sup>.
 
-Line 16 seems a good candidate, since the line 2 defines a local timer
+Line 16 seems a good candidate, since line 2 defines a local timer
 variable that holds the timer address. This is useful because we don't
 have a syntax in `perf-probe` to take the address of a struct member.
 Just to illustrate member dereference, we will also print the timer
@@ -310,7 +310,7 @@ $3 = (refcount_t *) 0x30
 ```
 
 This little trick works by casting 0 to `struct task_struct *` and then
-taking the address of the of field we are interested. This will give the
+taking the address of the field we are interested in. This will give the
 field offset. Now we know the layout of the struct:
 
 ```c
@@ -345,9 +345,9 @@ Added new event:
 Notice we can give a name to the probe parameters, and also we can dereference
 structures to get their members. The field name becomes the probe parameter
 name if we don't give one explicitly. Also notice the usage of the `rdi` register
-here<sup>[2](#ft3)</sup>. According to the
+here<sup>[3](#ft3)</sup>. According to the
 [x86_64 calling convention](https://wiki.osdev.org/System_V_ABI#x86-64),
-it holds the function first argument. In our case, `dl_se`. Also, we had
+it holds the function's first argument. In our case, `dl_se`. Also, we had
 to specify the type `s32` for pid and usage parameters. If you don't specify
 a type, the default type is `x64`. `s32` means *signed 32 bits*. Let's use
 our new custom probe:
@@ -390,9 +390,9 @@ here are some valuable resources:
 <a name="ft1">1</a>: perf probes are not exactly the same as kernel probes,
 but in practice the differences don't matter.
 
-<a name="ft2">1</a>: you need the kernel debug symbols installed. For
-RHEL base systems, install it using `dnf install -y kernel-debuginfo`.
+<a name="ft2">2</a>: you need the kernel debug symbols installed. For
+RHEL-based systems, install it using `dnf install -y kernel-debuginfo`.
 
-<a name="ft3">2</a>: the probe syntax does not make a difference between
+<a name="ft3">3</a>: the probe syntax does not make a difference between
 `rdi` and `edi`. You just specify `di`. The same thing applies to the
 other registers.

@@ -14,12 +14,12 @@ I set up 25 machines to run a small subset of the production tasks, and so
 far results are excellent. The problem is that those machines are up 24/7 and there
 is no dynamic provisioning. If we need more machines, I have to manually change
 the [terraform](https://www.terraform.io) script to scale it up. We need a smart
-way to do that. We are going to build something similar as
+way to do that. We are going to build something similar to
 [aws-provisioner](https://github.com/taskcluster/aws-provisioner). However,
 we need a custom **packet.net** image to speed up instance startup.
 
 The problem is that if you can't ssh into the machine, there is no way to get
-access to it to see what's wrong. In this post,l I am going to show how you can
+access to it to see what's wrong. In this post, I am going to show how you can
 run a packet image locally with [qemu](https://www.qemu.org/).
 
 You can find documentation about creating custom packet images
@@ -59,7 +59,7 @@ $ sudo losetup -Pf linux.img
 
 The `-f` option looks for the first free loop device for attachment to the image file.
 The `-P` option instructs `losetup` to read the partition table and create a loop
-device for each partition found; this avoids we having to play with disk
+device for each partition found; this avoids us having to play with disk
 offsets. Now let's find our loop device:
 
 ```
@@ -156,7 +156,7 @@ $ cd ..
 $ sudo umount mnt/
 ```
 
-The commands are self explanatory. Now let's run our image:
+The commands are self-explanatory. Now let's run our image:
 
 ```
 $ sudo qemu-system-x86_64 -enable-kvm -hda /dev/loop12

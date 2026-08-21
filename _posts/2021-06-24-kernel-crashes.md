@@ -59,7 +59,7 @@ softirqs last disabled at (10175613): [<ffffffffc18d6aef>] rcutorture_one_extend
 ---[ end trace 0000000000000002 ]--- 
 ```
 
-The log is bigger than that but for this post only this part is worthy.
+The log is bigger than that but for this post only this part is noteworthy.
 The warning reported is from
 [this code fragment](https://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-rt-devel.git/tree/kernel/softirq.c?h=linux-5.12.y-rt-rebase#n173)
 <sup>[1](#ft1)</sup>:

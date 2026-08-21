@@ -8,20 +8,20 @@ tags: [taskcluster]
 In this post I am going to talk about my work for phone builds inside the
 [Taskcluster](https://docs.taskcluster.net/) infrastructure. Mozilla is
 slightly moving from Buildbot to Taskcluster. Here I am going to
-give a survivor guide on Firefox OS phone builds.
+give a survival guide on Firefox OS phone builds.
 
 Submitting tasks
 ---------------
 
-A task is nothing more than a json file containing the description 
-of the job to execute. But you don't need to handle the json directly, all tasks
+A task is nothing more than a JSON file containing the description 
+of the job to execute. But you don't need to handle the JSON directly, all tasks
 are written in [YAML](https://en.wikipedia.org/wiki/YAML), and it is then processed
 by the [mach](https://mzl.la/1MkZ4gz) command. The in tree tasks are located
 at [testing/taskcluster/tasks](https://mzl.la/1MkYOhw) and the build tasks are
 inside the `builds/` directory.
 
 My favorite command to try out a task is the `mach taskcluster-build` command.
-It allows you to process a single task and output the json formatted task ready
+It allows you to process a single task and output the JSON-formatted task ready
 for Taskcluster submission.
 
 ```bash
@@ -42,7 +42,7 @@ click on `Create Task` to schedule it to run. Remember that you need
 [Taskcluster Credentials](https://auth.taskcluster.net/) to run Taskcluster
 tasks. If you have
 [taskcluster-cli](https://www.npmjs.com/package/taskcluster-cli/)
-installed, you can the pipe the mach output to `taskcluster run-task`.
+installed, you can then pipe the mach output to `taskcluster run-task`.
 
 The tasks are effectively executed inside a [docker](https://www.docker.com/)
 [image](https://dxr.mozilla.org/mozilla-central/source/testing/docker).
@@ -51,7 +51,7 @@ Mozharness
 ----------
 
 [Mozharness](https://wiki.mozilla.org/ReleaseEngineering/Mozharness)
-is what we use for effectively build stuff. Mozharness
+is what we use to effectively build stuff. The Mozharness
 architecture, despite its code size, is quite simple. Under the 
 `scripts` directory you find the harness scripts. We are specifically
 interested in the [b2g\_build.py](https://tinyurl.com/nlm8mjm) script. As the script
@@ -78,7 +78,7 @@ Here are the most common configurations:
   <dt>upload</dt>
   <dd>Upload info. Not used for Taskcluster.</dd>
   <dt>repo_remote_mappings</dt>
-  <dd>Maps externals repository to [mozilla domain](https://git.mozilla.org).</dd>
+  <dd>Maps external repositories to [mozilla domain](https://git.mozilla.org).</dd>
   <dt>env</dt>
   <dd>Environment variables for commands executed inside mozharness.</dd>
 </dl>
@@ -86,7 +86,7 @@ Here are the most common configurations:
 The listed actions map to Python methods inside the build class, with `-` replaced
 by `_`. For example, the action `checkout-sources` maps to the method
 `checkout_sources`. That's where the mozharness simplicity comes from: everything boils
-down to a sequence of method calls, just it, no secret. 
+down to a sequence of method calls, just that, no secrets. 
 
 For example, here is how you run mozharness to build a flame image:
 
@@ -129,7 +129,7 @@ because of (1), (2) and (3), the `phone-builder` docker image is secret,
 so only authorized users can submit tasks to it.
 
 If you need to create a build task for a new phone, most of the time you will
-starting from an existing task (Flame and Aries tasks are preferred) and then
+start from an existing task (Flame and Aries tasks are preferred) and then
 make your customizations. You might need to add new features to the
 [build scripts](https://tinyurl.com/py798c3), which currently are not the most
 flexible scripts around.

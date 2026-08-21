@@ -11,24 +11,24 @@ C/C++ developer. One of the projects I am working on is porting the
 to Windows. [Tizen.NUI](https://docs.tizen.org/application/dotnet/guides/nui/overview/)
 itself is written in C#, so it doesn't require any major effort to run on Windows,
 but it is heavily based on
-[DALi](ttps://docs.tizen.org/application/native/guides/ui/dali/), and there
-where the job lies. [DALi](ttps://docs.tizen.org/application/native/guides/ui/dali/)
+[DALi](https://docs.tizen.org/application/native/guides/ui/dali/), and that's
+where the job lies. [DALi](https://docs.tizen.org/application/native/guides/ui/dali/)
 kind of works on Windows already, but I caught several bugs affecting 64 bits. You
 can refer to the pull requests to get details on what was wrong.
 
-[DALi](ttps://docs.tizen.org/application/native/guides/ui/dali/),
+[DALi](https://docs.tizen.org/application/native/guides/ui/dali/),
 doesn't belong to a single repo, actually. On top of
 [dali-core](https://github.com/dalihub/dali-core/) we have
 [dali-adaptor](https://github.com/dalihub/dali-adaptor) and
 [dali-toolkit](https://github.com/dalihub/dali-toolkit), not to mention the sample
-[applications](https://github.com/dalihub/dali-demos/). This post is a step by step
+[applications](https://github.com/dalihub/dali-demos/). This post is a step-by-step
 guide to build [DALi](https://docs.tizen.org/application/native/guides/ui/dali/)
 on Windows.
 
 Dependencies
 ============
 
-To build and install [DALi](ttps://docs.tizen.org/application/native/guides/ui/dali/)
+To build and install [DALi](https://docs.tizen.org/application/native/guides/ui/dali/)
 you will need:
 
 * [Visual Studio 2019](https://visualstudio.microsoft.com/vs/community/) (Community Edition is fine)
@@ -38,7 +38,7 @@ you will need:
 Building Windows dependencies
 =============================
 
-After the dependencies installed, you need the
+After the dependencies are installed, you need the
 [windows-dependencies](https://github.com/dalihub/windows-dependencies) repository.
 Run the following commands in a subfolder that will host the DALi repos:
 
@@ -107,7 +107,7 @@ dali-demo
 
 [dali-demo](https://github.com/dalihub/dali-demo/) contains a series of sample applications
 that you can try to test if your installation is ok. The procedure to build and install
-these apps are the same as for the libraries:
+these apps is the same as for the libraries:
 
 ```
 C:\DALi>git clone https://github.com/dalihub/dali-demo/
@@ -121,10 +121,10 @@ C:\DALi\dali-demo\build\tizen\build>cmake --build . --target install
 Running
 =======
 
-If everything was ok, your binaries should reside inside inside the
+If everything was ok, your binaries should reside inside the
 `DALI_ENV_FOLDER` directory.
 
-[DALi](ttps://docs.tizen.org/application/native/guides/ui/dali/)
+[DALi](https://docs.tizen.org/application/native/guides/ui/dali/)
 depends on [libANGLE](https://chromium.googlesource.com/angle/angle),
 an OpenGL ES library that translates OpenGL calls to one of several supported
 backends. On Windows, the default backend is Direct3D 11. I was having
@@ -141,7 +141,7 @@ C:\DALi\dali-env\bin>hello-world.example.exe
 ```
 
 On the day I write this post, I have some patches merged in the
-[DALi](ttps://docs.tizen.org/application/native/guides/ui/dali/)
-repos and others are pending to review. If you are experiencing crashes
-you may want to give a look at the open pull requests and apply
+[DALi](https://docs.tizen.org/application/native/guides/ui/dali/)
+repos and others are pending review. If you are experiencing crashes
+you may want to take a look at the open pull requests and apply
 some of them.

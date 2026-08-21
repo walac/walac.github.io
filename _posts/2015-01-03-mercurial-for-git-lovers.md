@@ -13,7 +13,7 @@ was far less painful than from git to Mercurial. I think there are a few
 reasons for that:
 
 * When I started to learn git, I started it with
-[PyUSB](https://walac.github.io/pyusb), a small personal project that was on its
+[PyUSB](https://walac.github.io/pyusb), a small personal project that was in its
 youth at that time. This means I needed just the most basic commands to start
 using it. When I started on Mercurial, I was working on
 [Gecko](https://developer.mozilla.org/en-US/docs/Mozilla/Gecko), a very big and
@@ -21,16 +21,16 @@ complex project, with thousands of contributors, so I had to learn
 more advanced commands from day one.
 
 * When you install git, you have all you need, all commands you need are there.
-Mercurial, in the other hand,
+Mercurial, on the other hand,
 [operates in a very different way](https://gregoryszorc.com/blog/2013/05/12/thoughts-on-mercurial-%28and-git%29/).
 It just ships with some basic commands, delegating most of the more advanced
 stuff to extensions. So you have to dig to find the extensions that enable the
 Mercurial approach to commands you love in git.
 
-* There is nothing like git branches parallel in Mercurial, and 9/10 of git users'
-workflow rely heavily on branches (more on that later).
+* There is no equivalent to git branches in Mercurial, and 9/10 of git users'
+workflows rely heavily on branches (more on that later).
 
-Most of the day to day commands in Mercurial are quite similar to git, like
+Most of the day-to-day commands in Mercurial are quite similar to git, like
 [clone](https://selenic.com/hg/help/clone) and
 [commit](https://selenic.com/hg/help/commit). Some others have very different names,
 like [git revert](https://git-scm.com/docs/git-revert), which in Mercurial
@@ -108,8 +108,8 @@ This [link](https://mercurial.selenic.com/wiki/GitConcepts) has a lot more
 information about differences between git and Mercurial, including Mercurial
 counterparts for several git actions.
 
-Mercurial comes with an important feature that there is no equivalent
-in git at all, called [phases](https://mercurial.selenic.com/wiki/Phases).
+Mercurial comes with an important feature that has no equivalent
+in git, called [phases](https://mercurial.selenic.com/wiki/Phases).
 I mention it here because you may have problems with it if you (like me)
 do a lot of rebase and history editing. Every commit you push or pull
 to/from a remote repository is considered `public`, which makes it
@@ -125,7 +125,7 @@ face errors like this:
 ```
 
 That's because I have pushed this commit and Mercurial made it
-`public` (aka immutable). The solution for this is make it
+`public` (aka immutable). The solution for this is to make it
 a `draft` commit again:
 
 ```
@@ -133,7 +133,7 @@ a `draft` commit again:
 ```
 
 I find this feature very annoying and I think it would be better
-implemented as an extension. It sounds Java telling me what I
+implemented as an extension. It sounds like Java telling me what I
 can and can't do. You can disable making commits public after
 a push by adding these entries in your
 [hgrc](https://www.selenic.com/mercurial/hgrc.5.html) file:
@@ -151,7 +151,7 @@ difficult part for me was to understand that Mercurial has no branch
 support like git. Period. Bookmarks are just a hack that tries
 to mimic topic branches, but, technically, a bookmark is not a branch, it is
 more like a tag. I am not going to explain how Bookmarks work, you can learn more
-on it [here](https://mercurial.aragost.com/kick-start/en/bookmarks/).
+about it [here](https://mercurial.aragost.com/kick-start/en/bookmarks/).
 
 The most irritating thing regarding Bookmarks is that changing the history in
 one bookmark can affect other bookmarks as well. In some cases, when you
@@ -234,9 +234,9 @@ descendant branches. In Mercurial this is not true simply because all the commit
 ### Conclusion
 
 If your git workflow relies heavily on git branching capabilities and history
-editing, you will have some trouble to adapt yourself to Mercurial (like me).
+editing, you will have some trouble adapting to Mercurial (like me).
 
-If I could request just one feature to Mercurial developers, that would be
+If I could request just one feature of Mercurial developers, that would be
 lightweight branches like git. That would give Mercurial a big boost.
 
 There are other problems I had with bookmarks regarding remote repositories,

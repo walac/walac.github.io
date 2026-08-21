@@ -5,7 +5,7 @@ comments: true
 tags: [tizen, C#]
 ---
 
-As the last project of 2020, I and some other co-workers were assigned the
+As the last project of 2020, some other co-workers and I were assigned the
 task of creating a prototype for a graphical user interface preview Visual
 Studio extension for the
 [NUI](https://docs.tizen.org/application/dotnet/guides/nui/overview/)
@@ -13,7 +13,7 @@ graphics toolkit. Notice the extension is for
 [Visual Studio](https://visualstudio.microsoft.com/), not
 [Visual Studio Code](https://code.visualstudio.com/).
 
-The idea is the programmer create the user interface in a
+The idea is that the programmer creates the user interface in a
 [XAML](https://docs.microsoft.com/en-us/dotnet/desktop/wpf/fundamentals/xaml?view=netdesktop-5.0#:~:text=is under construction.-,What is XAML,NET Core app.)
 file and the plugin displays the preview of the user interface. `NUI` already
 has [some support](https://docs.tizen.org/application/dotnet/guides/nui/xaml/xaml-support-for-tizen-nui/)
@@ -24,21 +24,21 @@ found the [OmniXaml](https://github.com/OmniGUI/OmniXAML) library. Although not
 maintained anymore, the library is pretty complete. Our initial idea was to make
 the window show the result integrated with Visual Studio, but as NUI creates its
 own Window and message loop, we had to take another approach. The basic
-architecture is as follows: when the user click in the menu to show the preview,
+architecture is as follows: when the user clicks on the menu to show the preview,
 we start a thread in which we create the NUI Window and run the message loop. We also
 start a timer that periodically polls the active document; if it is a XAML file
 and we can parse it successfully, we update the UI.
 
-One particular detail is that Visual Studio is a 32 bits executable, so all the
+One particular detail is that Visual Studio is a 32-bit executable, so all the
 [DALi](https://docs.tizen.org/application/native/guides/ui/dali/) libraries and
-their dependencies must be compiled in 32 bits. As `DALi` is contantly evolving,
+their dependencies must be compiled in 32-bit. As `DALi` is constantly evolving,
 we created a branch in our own fork to make sure we can keep the plugin development
 without being surprised by bugs introduced by new commits.
 
-# Building DALi for 32 bits Windows
+# Building DALi for 32-bit Windows
 
 First, you have to make sure all [vcpkg](https://github.com/Microsoft/vcpkg) dependencies
-are installed with their 32 bits variant.
+are installed with their 32-bit variant.
 That's the default in vcpkg last time I checked, but you can also add the `:x86-windows` suffix
 for each package name.
 
@@ -139,5 +139,5 @@ Here is a demo of how the plugin behaves:
 
 <iframe width="640" height="360" src="https://www.youtube.com/embed/67ccJSP7Vi8" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
-Of course, this is just a prototype. You check the source code in the
+Of course, this is just a prototype. You can check the source code in the
 [repository](https://github.com/expertisesolutions/NUIPreview).
