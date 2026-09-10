@@ -34,22 +34,6 @@ in `.text` plus an entry in
 **“Static key”** is the higher-level API (`DEFINE_STATIC_KEY_*`,
 `static_branch_*`). This tutorial keeps them distinct.
 
-Core files referenced:
-
-| File | Role |
-|----|----|
-| [`include/linux/jump_label.h`](https://elixir.bootlin.com/linux/v7.2/source/include/linux/jump_label.h) | Public API, macros, [`struct static_key`](https://elixir.bootlin.com/linux/v7.2/source/include/linux/jump_label.h#L86) |
-| [`kernel/jump_label.c`](https://elixir.bootlin.com/linux/v7.2/source/kernel/jump_label.c) | Architecture-independent core logic |
-| [`arch/x86/include/asm/jump_label.h`](https://elixir.bootlin.com/linux/v7.2/source/arch/x86/include/asm/jump_label.h) | x86 inline asm that emits the branch |
-| [`arch/x86/kernel/jump_label.c`](https://elixir.bootlin.com/linux/v7.2/source/arch/x86/kernel/jump_label.c) | x86 code-patching backend |
-| [`arch/x86/include/asm/text-patching.h`](https://elixir.bootlin.com/linux/v7.2/source/arch/x86/include/asm/text-patching.h) | JMP/INT3/CALL/RET encodings, [`text_gen_insn()`](https://elixir.bootlin.com/linux/v7.2/source/arch/x86/include/asm/text-patching.h#L123) |
-| [`arch/x86/include/asm/nops.h`](https://elixir.bootlin.com/linux/v7.2/source/arch/x86/include/asm/nops.h) | [`x86_nops[]`](https://elixir.bootlin.com/linux/v7.2/source/arch/x86/kernel/alternative.c#L91) table, `BYTES_NOPx` raw byte defs |
-| [`arch/x86/kernel/alternative.c`](https://elixir.bootlin.com/linux/v7.2/source/arch/x86/kernel/alternative.c) | [`text_poke()`](https://elixir.bootlin.com/linux/v7.2/source/arch/x86/kernel/alternative.c#L2668), `smp_text_poke_*()` — the SMP-safe patcher |
-| [`include/linux/jump_label_ratelimit.h`](https://elixir.bootlin.com/linux/v7.2/source/include/linux/jump_label_ratelimit.h) | [`struct static_key_deferred`](https://elixir.bootlin.com/linux/v7.2/source/include/linux/jump_label_ratelimit.h#L9) |
-| [`include/linux/tracepoint.h`](https://elixir.bootlin.com/linux/v7.2/source/include/linux/tracepoint.h) | A real, heavily-used consumer |
-| [`Documentation/staging/static-keys.rst`](https://elixir.bootlin.com/linux/v7.2/source/Documentation/staging/static-keys.rst) | Upstream overview (somewhat outdated on x86 sizes) |
-| [`tools/objtool/`](https://elixir.bootlin.com/linux/v7.2/source/tools/objtool) | Compile-time rewrite of `jmp`→`nop` under [`HAVE_JUMP_LABEL_HACK`](https://elixir.bootlin.com/linux/v7.2/source/arch/Kconfig#L1399) |
-
 ------------------------------------------------------------------------
 
 ## 1 The problem jump labels solve {#the-problem-jump-labels-solve}
