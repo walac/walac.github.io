@@ -44,7 +44,45 @@ key” for the API, “jump label” for the patching machinery underneath it.
 
 ------------------------------------------------------------------------
 
-## 1 Hardware background (why this is hard) {#hardware-background-why-this-is-hard}
+## 1 The problem jump labels solve {#the-problem-jump-labels-solve}
+
+Kernel code is full of rarely-taken checks that guard optional
+functionality: “is tracing enabled for this tracepoint?”, “is this
+security module active?”, “is this debug feature on?”. A naive
+implementation:
+
+``` c
+if (some_feature_enabled)
+        do_something();
+```
+
+Even when `some_feature_enabled` is almost always false, the CPU still
+must:
+
+1.  Load `some_feature_enabled` from memory (a cache line).
+2.  Compare it against zero.
+3.  Predict/branch on the result.
+
+As [§2.1](#what-a-cpu-actually-does-with-instructions) worked out in
+detail, modern CPUs predict step 3 well, but “well” is not “free”:
+prediction hides the misprediction penalty, not the **guaranteed memory
+load** in step 1. When the check sits in a hot path that runs millions
+of times a second (scheduler, networking, every `trace_*()` site), that
+unavoidable load adds up.
+
+**Jump labels remove the load and the compare for the common case** by
+rewriting the machine code at runtime. When the feature is off, the hot
+path literally has no branch to the rare code — it is a `nop` (or an
+unconditional `jmp` over an out-of-line block, depending on polarity).
+When someone turns the feature on, the kernel walks every call site for
+that key and overwrites `nop`↔`jmp` in place.
+
+Tradeoff in one sentence: **toggling is expensive** (machine-wide sync,
+text poke); **running the hot path is nearly free**.
+
+------------------------------------------------------------------------
+
+## 2 Hardware background (why this is hard) {#hardware-background-why-this-is-hard}
 
 Jump labels work by rewriting machine code while the kernel is running -
 self-modifying code, executed by CPUs that were never designed to expect
@@ -53,7 +91,7 @@ how a CPU actually treats instructions and memory loads, the exact
 byte-level encodings involved, and why a live, multi-core kernel can’t
 just overwrite them with an ordinary write.
 
-### 1.1 What a CPU actually does with instructions {#what-a-cpu-actually-does-with-instructions}
+### 2.1 What a CPU actually does with instructions {#what-a-cpu-actually-does-with-instructions}
 
 A modern x86_64 core does not “read one instruction, execute it,
 repeat”. Roughly:
@@ -85,12 +123,12 @@ The “off” path can be literally empty work for the frontend - decode a
 `nop`, move on - with no cache line to bounce and nothing for the branch
 predictor to even weigh in on.
 
-### 1.2 x86 instruction encoding: JMP and NOP {#x86-instruction-encoding-jmp-and-nop}
+### 2.2 x86 instruction encoding: JMP and NOP {#x86-instruction-encoding-jmp-and-nop}
 
-[§1.1](#what-a-cpu-actually-does-with-instructions)’s cost difference
+[§2.1](#what-a-cpu-actually-does-with-instructions)’s cost difference
 between a load and a `nop`/`jmp` has to actually be encoded in real
 bytes for a patch to swap between them, and matching sizes will matter
-as soon as [§1.3](#why-you-cannot-just-memcpy-over-live-code-on-smp)
+as soon as [§2.3](#why-you-cannot-just-memcpy-over-live-code-on-smp)
 gets to atomicity - so here is the exact shape of both. x86 is a
 variable-length ISA; the encodings jump labels care about:
 
@@ -123,7 +161,7 @@ compute.
 stacks, other jump targets, exception tables, ORC unwind info — none of
 them need updating. Patching is an *in-place* byte swap of equal length.
 
-### 1.3 Why you cannot just `memcpy` over live code on SMP {#why-you-cannot-just-memcpy-over-live-code-on-smp}
+### 2.3 Why you cannot just `memcpy` over live code on SMP {#why-you-cannot-just-memcpy-over-live-code-on-smp}
 
 Patching kernel text is harder than patching an ordinary data structure
 because three things are true of it at once:
@@ -194,7 +232,7 @@ one of several clients that share it — ftrace, static calls, kprobes,
 and the alternatives-patching machinery all reuse this same three-step
 dance.
 
-### 1.4 Writing read-only kernel text: [`text_poke()`](https://elixir.bootlin.com/linux/v7.2-rc7/source/arch/x86/kernel/alternative.c#L2668) {#writing-read-only-kernel-text-text_poke}
+### 2.4 Writing read-only kernel text: [`text_poke()`](https://elixir.bootlin.com/linux/v7.2-rc7/source/arch/x86/kernel/alternative.c#L2668) {#writing-read-only-kernel-text-text_poke}
 
 Modern kernels no longer patch text by clearing the WP bit in `%cr0`,
 writing, and setting it back. That old trick worked, but it was a blunt
@@ -541,47 +579,9 @@ mappings.
 
 ------------------------------------------------------------------------
 
-## 2 The problem jump labels solve {#the-problem-jump-labels-solve}
-
-Kernel code is full of rarely-taken checks that guard optional
-functionality: “is tracing enabled for this tracepoint?”, “is this
-security module active?”, “is this debug feature on?”. A naive
-implementation:
-
-``` c
-if (some_feature_enabled)
-        do_something();
-```
-
-Even when `some_feature_enabled` is almost always false, the CPU still
-must:
-
-1.  Load `some_feature_enabled` from memory (a cache line).
-2.  Compare it against zero.
-3.  Predict/branch on the result.
-
-As [§1.1](#what-a-cpu-actually-does-with-instructions) worked out in
-detail, modern CPUs predict step 3 well, but “well” is not “free”:
-prediction hides the misprediction penalty, not the **guaranteed memory
-load** in step 1. When the check sits in a hot path that runs millions
-of times a second (scheduler, networking, every `trace_*()` site), that
-unavoidable load adds up.
-
-**Jump labels remove the load and the compare for the common case** by
-rewriting the machine code at runtime. When the feature is off, the hot
-path literally has no branch to the rare code — it is a `nop` (or an
-unconditional `jmp` over an out-of-line block, depending on polarity).
-When someone turns the feature on, the kernel walks every call site for
-that key and overwrites `nop`↔`jmp` in place.
-
-Tradeoff in one sentence: **toggling is expensive** (machine-wide sync,
-text poke); **running the hot path is nearly free**.
-
-------------------------------------------------------------------------
-
 ## 3 The mental model, in one diagram {#the-mental-model-in-one-diagram}
 
-[§2](#the-problem-jump-labels-solve) described the tradeoff in words;
+[§1](#the-problem-jump-labels-solve) described the tradeoff in words;
 here is the same idea as the literal code the compiler produces for one
 `if`, side by side in both of its two possible forms:
 
@@ -625,7 +625,7 @@ tutorial; only the `nop`/`jmp` at the top of the site ever changes.
 | enabled | `jmp <out-of-line>` | one unconditional jump | jump + rare code + jump back |
 
 Compare this to the naive version from
-[§2](#the-problem-jump-labels-solve), which **always** pays the *load +
+[§1](#the-problem-jump-labels-solve), which **always** pays the *load +
 compare* price.
 
 ------------------------------------------------------------------------
@@ -842,7 +842,7 @@ the patched instruction. Using
 [`static_key_enabled()`](https://elixir.bootlin.com/linux/v7.2-rc7/source/include/linux/jump_label.h#L407)
 there instead means paying, on every single call, exactly the cache-line
 load this whole tutorial opened by trying to eliminate
-([§1.1](#what-a-cpu-actually-does-with-instructions)).
+([§2.1](#what-a-cpu-actually-does-with-instructions)).
 
 ### 4.5 Keys must be global / static storage {#keys-must-be-global-static-storage}
 
@@ -3276,7 +3276,7 @@ calls it once, after its loop ends, to flush whatever is still pending.
 ## 10 x86 text patching: the gory details {#x86-text-patching-the-gory-details}
 
 This is where the “you cannot just `memcpy` over live code” argument
-from [§1.3](#why-you-cannot-just-memcpy-over-live-code-on-smp) turns
+from [§2.3](#why-you-cannot-just-memcpy-over-live-code-on-smp) turns
 into actual working code. Roadmap: [§10.1](#early-boot-vs-live-smp)
 picks early-boot-single-CPU vs. later-multi-CPU;
 [§10.2](#batching-api-used-by-jump-labels) covers the batching array
@@ -3314,7 +3314,7 @@ nobody else around to race the write,
 can just do a plain IRQ-disabled + `memcpy()` +
 [`sync_core()`](https://elixir.bootlin.com/linux/v7.2-rc7/source/arch/x86/include/asm/sync_core.h#L58)
 and be done. `.text` also happens to still be writable at this point, so
-the alias trick from [§1.4](#writing-read-only-kernel-text-text_poke)
+the alias trick from [§2.4](#writing-read-only-kernel-text-text_poke)
 isn’t needed either — but that is a bonus the check gets for free, not
 something it verifies directly:
 [`smp_init()`](https://elixir.bootlin.com/linux/v7.2-rc7/source/init/main.c#L1650)
@@ -3488,9 +3488,9 @@ and only a key with more than 256 sites forces a second round.
 ### 10.3 The INT3 SMP algorithm ([`smp_text_poke_batch_finish`](https://elixir.bootlin.com/linux/v7.2-rc7/source/arch/x86/kernel/alternative.c#L2941)) {#the-int3-smp-algorithm-smp_text_poke_batch_finish}
 
 This is the payoff of everything
-[§1.3](#why-you-cannot-just-memcpy-over-live-code-on-smp) through
+[§2.3](#why-you-cannot-just-memcpy-over-live-code-on-smp) through
 [§10.2](#batching-api-used-by-jump-labels) built toward. The key fact
-from [§1.3](#why-you-cannot-just-memcpy-over-live-code-on-smp) was that
+from [§2.3](#why-you-cannot-just-memcpy-over-live-code-on-smp) was that
 only a *single-byte* store is atomic with respect to instruction fetch —
 nothing wider is. The protocol below never trusts a multi-byte write to
 be safe on its own; instead it uses one atomic single-byte store to
@@ -3823,7 +3823,7 @@ other core was still mid-fetch on the phase-1 view of the site, the
 entire point of planting the INT3 trap first would be defeated.
 
 What actually happens on the receiving end is where the CPU model from
-[§1.1](#what-a-cpu-actually-does-with-instructions) finally pays for
+[§2.1](#what-a-cpu-actually-does-with-instructions) finally pays for
 itself. A modern core does not execute an instruction the moment it sees
 its bytes: it fetches ahead of where it is currently retiring, decodes
 into microcodes, and may be holding several instructions of that
@@ -3956,7 +3956,7 @@ walked through — the INT3, the tail bytes, the final first byte — is not
 a raw write to `.text`. Each one is a full call to
 [`text_poke()`](https://elixir.bootlin.com/linux/v7.2-rc7/source/arch/x86/kernel/alternative.c#L2668),
 meaning each one pays the entire
-[§1.4](#writing-read-only-kernel-text-text_poke) dance in full: build
+[§2.4](#writing-read-only-kernel-text-text_poke) dance in full: build
 the temporary alias in
 [`text_poke_mm`](https://elixir.bootlin.com/linux/v7.2-rc7/source/arch/x86/kernel/alternative.c#L2515),
 switch `%cr3` onto it, copy through `STAC`/`CLAC`, switch back, tear the
@@ -3966,7 +3966,7 @@ them skip a step.
 
 All of that happens under
 [`text_mutex`](https://elixir.bootlin.com/linux/v7.2-rc7/source/kernel/extable.c#L27),
-and this is the piece [§1.4](#writing-read-only-kernel-text-text_poke)
+and this is the piece [§2.4](#writing-read-only-kernel-text-text_poke)
 leaned on without yet saying where it comes from:
 [`text_mutex`](https://elixir.bootlin.com/linux/v7.2-rc7/source/kernel/extable.c#L27)
 is what stops two unrelated patchers — jump labels, static calls,
@@ -4687,7 +4687,7 @@ call.
 are empty stubs — there is no patch pass to serialize.
 
 The net effect on every hot path is exactly the cost
-[§2](#the-problem-jump-labels-solve) opened with: a memory load of
+[§1](#the-problem-jump-labels-solve) opened with: a memory load of
 [`enabled`](https://elixir.bootlin.com/linux/v7.2-rc7/source/include/linux/jump_label.h#L87),
 a compare, and a conditional branch. The
 [`likely()`](https://elixir.bootlin.com/linux/v7.2-rc7/source/include/linux/compiler.h#L76)/[`unlikely()`](https://elixir.bootlin.com/linux/v7.2-rc7/source/include/linux/compiler.h#L77)
@@ -4738,7 +4738,7 @@ works, only which specific numbers show up:
     [§6.3](#have_jump_label_hack-why-sites-are-2-or-5-bytes) picks the
     2-byte `JMP rel8` encoding rather than the 5-byte `rel32` form. A
     farther `l_yes` would just mean 5 bytes instead of 2 everywhere
-    below ([§1.2](#x86-instruction-encoding-jmp-and-nop)); nothing else
+    below ([§2.2](#x86-instruction-encoding-jmp-and-nop)); nothing else
     about the trace would change.
 
 ### 13.1 Compile / link / `objtool` ([`HAVE_JUMP_LABEL_HACK`](https://elixir.bootlin.com/linux/v7.2-rc7/source/arch/Kconfig#L1399)) {#compile-link-objtool-have_jump_label_hack}
@@ -4801,7 +4801,7 @@ The six steps below trace how those bytes arrive at their final state:
     -128..+127 reach of a signed byte. It emits the 2-byte `JMP rel8`
     form: opcode `EB`, followed by
     `disp = dest - (addr + insn_size) = 80 = 0x50` (the disp formula
-    from [§1.2](#x86-instruction-encoding-jmp-and-nop)). The two bytes
+    from [§2.2](#x86-instruction-encoding-jmp-and-nop)). The two bytes
     actually sitting at `1:` right after assembly, before `objtool` ever
     runs, are `EB 50`.
 
@@ -4811,7 +4811,7 @@ The six steps below trace how those bytes arrive at their final state:
     which sees bit 1 set in the stored `key` operand and rewrites those
     exact two bytes, in place, from the `jmp` (`EB 50`) to the 2-byte
     NOP (`66 90`, the NOP encoding from
-    [§1.2](#x86-instruction-encoding-jmp-and-nop)) — same size, so
+    [§2.2](#x86-instruction-encoding-jmp-and-nop)) — same size, so
     nothing around the site shifts. By the time `vmlinux` is linked, the
     live bytes at `1:` are already `66 90`, and `objtool` itself is long
     gone.
@@ -4856,7 +4856,7 @@ The six steps below trace how those bytes arrive at their final state:
     [`static_branch_enable(&k)`](https://elixir.bootlin.com/linux/v7.2-rc7/source/include/linux/jump_label.h#L522)
     runs later. With that in place, the hot path in `f()` from the very
     first time it runs is: decode `66 90` (falls through, no load of
-    `k`, [§1.1](#what-a-cpu-actually-does-with-instructions)), then
+    `k`, [§2.1](#what-a-cpu-actually-does-with-instructions)), then
     `call something`.
 
 In summary, the same two bytes at `1:` passed through three stages
@@ -5052,7 +5052,7 @@ again, in the opposite byte direction:
 Put together, the build-time `66 90` of this one site, the `EB 50` of
 the first enable, and the `66 90` of this disable again are the entire
 lifecycle that
-[§1](#hardware-background-why-this-is-hard)-[§10](#x86-text-patching-the-gory-details)
+[§2](#hardware-background-why-this-is-hard)-[§10](#x86-text-patching-the-gory-details)
 spent this whole tutorial describing in the abstract — the same two
 bytes, chosen and re-derived by a different mechanism at each stage, but
 never touched by anything other than the three sanctioned writers: the
@@ -5064,7 +5064,7 @@ after that.
 
 | Stage | Live bytes at `1:` | Who wrote them |
 |----|----|----|
-| After assembly, before `objtool` | `EB 50` | Compiler/assembler ([§6.1](#the-two-asm-helpers), [§1.2](#x86-instruction-encoding-jmp-and-nop)) |
+| After assembly, before `objtool` | `EB 50` | Compiler/assembler ([§6.1](#the-two-asm-helpers), [§2.2](#x86-instruction-encoding-jmp-and-nop)) |
 | After `objtool`, at boot | `66 90` | [`handle_jump_alt()`](https://elixir.bootlin.com/linux/v7.2-rc7/source/tools/objtool/check.c#L1872) ([§6.3](#have_jump_label_hack-why-sites-are-2-or-5-bytes)) |
 | After `static_branch_enable(&k)` | `EB 50` | [`__jump_label_patch()`](https://elixir.bootlin.com/linux/v7.2-rc7/source/arch/x86/kernel/jump_label.c#L36) via INT3 protocol ([§10.3](#the-int3-smp-algorithm-smp_text_poke_batch_finish)) |
 | After `static_branch_disable(&k)` | `66 90` | Same, reverse direction |
