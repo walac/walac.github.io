@@ -64,7 +64,7 @@ networking, every `trace_*()` site), that load adds up.
 rewriting the machine code at runtime. When the feature is off, the hot
 path has no branch to the rare code — it is a `nop` (or an unconditional
 `jmp`). When someone turns the feature on, the kernel walks every call
-site for that key and overwrites `nop` \<=\> `jmp` in place.
+site for that key and swaps `nop` and `jmp` in place.
 
 Tradeoff in one sentence: **toggling is expensive** (machine-wide sync,
 text poke); **running the hot path is nearly free**.
@@ -184,8 +184,8 @@ Ask two questions up front:
     [`static_branch_likely()`](https://elixir.bootlin.com/linux/v7.2/source/include/linux/jump_label.h#L474)
     when the body is the common path.
 
-You can mix them. A `_FALSE` key works with both `likely` and
-`unlikely`; as well as a `_TRUE` key. The kernel picks a compiled-in
+You can mix them: a `_FALSE` key works with both `likely` and
+`unlikely`, and so does a `_TRUE` key. The kernel picks a compiled-in
 `nop` or `jmp` so the **default** case is the cheap one.
 
 Rule of thumb for most new code:
@@ -223,7 +223,7 @@ Do **not** mix `enable`/`disable` with `inc`/`dec` on the same key. Both
 APIs act on the same underlying
 [`key->enabled`](https://elixir.bootlin.com/linux/v7.2/source/include/linux/jump_label.h#L87)
 counter, but each assumes a different range of values as valid: the
-boolean API assumes 0 or 1, while `inc`/`dec` is assumes an integer
+boolean API assumes 0 or 1, while `inc`/`dec` assumes an integer
 counting value.
 
 If some other
@@ -411,10 +411,10 @@ one runs is the key to the whole mechanism:
   detects this case up front and deliberately leaves the count untouched
   at 1, then hands off to
   [`schedule_delayed_work()`](https://elixir.bootlin.com/linux/v7.2/source/include/linux/workqueue.h#L853),
-  which arms a timer for `timeout` jiffies. Only once that timer
-  actually fires up, then
+  which arms a timer for `timeout` jiffies. Only once that timer fires
+  does
   [`jump_label_update_timeout()`](https://elixir.bootlin.com/linux/v7.2/source/kernel/jump_label.c#L325)
-  runs the real decrement and triggers the patch-off.
+  run the real decrement and trigger the patch-off.
 
 So for the entire `timeout` window, nothing about the feature has
 changed: the count is still 1, still fully enabled, still fully patched.
@@ -445,16 +445,15 @@ static_key_deferred_flush(&sockopt_key);
 ```
 
 [`static_key_deferred_flush()`](https://elixir.bootlin.com/linux/v7.2/source/include/linux/jump_label_ratelimit.h#L32)
-blocks until any pending deferred disable has actually run. The
-enclosing struct,
-[`struct static_key_false_deferred`](https://elixir.bootlin.com/linux/v7.2/source/include/linux/jump_label_ratelimit.h#L21),
-bundles the key itself, the `timeout`, and the `delayed_work` together.
-It is for memory usually is is about to go away, e.g. a module being
-unloaded. Free that memory with the timer still armed, and when it
-eventually fires up,
+blocks until any pending deferred disable has actually run. Call it
+before freeing the enclosing
+[`struct static_key_false_deferred`](https://elixir.bootlin.com/linux/v7.2/source/include/linux/jump_label_ratelimit.h#L21)
+— the struct that bundles the key, the `timeout`, and the
+`delayed_work`. That memory usually is about to go away, e.g. a module
+being unloaded. Free it with the timer still armed, and when the timer
+fires,
 [`jump_label_update_timeout()`](https://elixir.bootlin.com/linux/v7.2/source/kernel/jump_label.c#L325)
-will run on a `delayed_work` that no longer exists, causing a
-use-after-free.
+will run on a `delayed_work` that no longer exists: a use-after-free.
 
 ------------------------------------------------------------------------
 
@@ -473,31 +472,25 @@ A modern x86_64 core does not “read one instruction, execute it,
 repeat”. Roughly:
 
 1.  **Fetch** bytes from the instruction cache (I-cache / L1i).
-2.  **Decode** those bytes into microcodes (variable-length on x86 — an
+2.  **Decode** those bytes into micro-ops (variable-length on x86 — an
     instruction can be 1–15 bytes).
 3.  **Execute** out of order, with a **branch predictor** guessing which
     way conditional branches go so the pipeline stays full.
 4.  Commit results in order.
 
-Two consequences follow from that pipeline, and together they are the
-entire performance case for jump labels. The first is about what a naive
-`if (feature_enabled)` check actually costs. Out-of-order execution and
-branch prediction make the *branch itself* close to free: predict
-correctly often enough and there is no pipeline flush to pay for. But
-prediction only hides the cost of guessing which way a branch goes - it
-does nothing about the `feature_enabled` **load** that feeds the guess.
-That load still has to happen on every single hit of the path, whether
-or not the predictor gets the branch right, and it still claims a real
-data-cache access and an execution port each time. Under cache pressure,
-or if some other CPU ever writes that flag and bounces its cache line
-out from under you, the “cheap” branch stops being cheap at all.
+Branch prediction can hide a well-predicted `if`, but not the load that
+feeds it. Out-of-order execution and branch prediction make the *branch
+itself* close to free: predict correctly often enough and there is no
+pipeline flush to pay for. The `feature_enabled` **load** that feeds the
+guess still happens on every hit, and it still claims a data-cache
+access and an execution port each time. Under cache pressure, or if some
+other CPU writes that flag and bounces its cache line, the “cheap”
+branch stops being cheap at all.
 
-The second consequence is the whole point of jump labels: an
-unconditional `nop` or an unconditional `jmp` sidesteps that entire
-problem, because there is no flag to load and no condition to evaluate.
-The “off” path can be literally empty work for the frontend - decode a
-`nop`, move on - with no cache line to bounce and nothing for the branch
-predictor to even weigh in on.
+An unconditional `nop` or `jmp` has no flag to load and no condition to
+evaluate. The “off” path is empty work for the frontend — decode a
+`nop`, move on — with no cache line to bounce and nothing for the branch
+predictor to weigh in on.
 
 ### 4.2 x86 instruction encoding: JMP and NOP {#x86-instruction-encoding-jmp-and-nop}
 
@@ -540,7 +533,7 @@ Patching kernel text is harder than patching an ordinary data structure
 because three things are true of it at once:
 
 1.  It is mapped **read-only** after boot
-    ([`CONFIG_STRICT_KERNEL_RWX`](https://elixir.bootlin.com/linux/v7.2/source/arch/Kconfig#L1581)),
+    ([`STRICT_KERNEL_RWX`](https://elixir.bootlin.com/linux/v7.2/source/arch/Kconfig#L1581)),
     so a normal store to it would simply fault — whatever mechanism does
     the patching has to get around that on purpose, not by accident.
 2.  It is being **fetched by other CPUs** concurrently — nothing pauses
@@ -549,14 +542,13 @@ because three things are true of it at once:
 3.  It may already be sitting half-decoded in the pipeline of another
     CPU, having been fetched moments ago but not yet executed.
 
-Point 2 is the dangerous one, and it is worth walking through
-concretely. Picture two CPUs, A and B, where A is patching a 5-byte
-instruction that B keeps calling in a loop. The store A makes is not one
-atomic operation — the CPU issues it as however many bus-width writes it
-takes to cover 5 bytes, and each of those writes becomes visible to the
-rest of the system separately. The fetch B makes can land in the middle
-of that sequence, seeing some bytes from before the write and some from
-after:
+Point 2 is the dangerous one. Picture two CPUs, A and B, where A is
+patching a 5-byte instruction that B keeps calling in a loop. The store
+A makes is not one atomic operation — the CPU issues it as however many
+bus-width writes it takes to cover 5 bytes, and each of those writes
+becomes visible to the rest of the system separately. The fetch B makes
+can land in the middle of that sequence, seeing some bytes from before
+the write and some from after:
 
                          time --->
 
@@ -618,12 +610,11 @@ replaces it with a narrower idea. Instead of unlocking the *existing*
 mapping of `.text`, it builds a **second, private virtual mapping of the
 exact same physical page** and writes through that instead.
 
-The intuition is worth stating before the mechanism. Physical RAM does
-not know or care how it is mapped; the same page of memory can be
-reached through more than one virtual address at once, each with its own
-permissions. `.text` normally has exactly one mapping, visible to every
-CPU, always read-only and executable. That single mapping is what lets
-any core fetch and run it at any moment.
+Physical RAM does not know or care how it is mapped; the same page of
+memory can be reached through more than one virtual address at once,
+each with its own permissions. `.text` normally has exactly one mapping,
+visible to every CPU, always read-only and executable. That single
+mapping is what lets any core fetch and run it at any moment.
 
 [`__text_poke()`](https://elixir.bootlin.com/linux/v7.2/source/arch/x86/kernel/alternative.c#L2546)
 temporarily adds a *second* mapping to that same physical page:
@@ -759,8 +750,8 @@ right after the switch, and its counterpart,
 restores them afterward. Breakpoints are disabled wholesale rather than
 only for the specific colliding address, so this even suppresses
 unrelated kernel breakpoints (e.g. ones set by perf) for that brief
-window. That’s accepted as a reasonable trade-off, since the window is
-so short.
+window. The window is short enough that the kernel accepts the
+suppression.
 
 Fourth, with the writable alias finally in place, the actual copy
 happens by calling `func`, at the address
@@ -811,9 +802,8 @@ call (though not for the
 variants, which skip this) the function reads back what it just wrote
 and `memcmp`s it against what was intended. Any mismatch is a
 [`BUG()`](https://elixir.bootlin.com/linux/v7.2/source/arch/x86/include/asm/bug.h#L114):
-a mechanism whose entire premise is “the bytes we write are exactly the
-bytes we meant to write” cannot be allowed to fail silently — a loud
-crash is the only honest response:
+a silent failure here would leave the CPU executing bytes the patcher
+did not mean to write.
 
 ``` c
 pte_clear(text_poke_mm, text_poke_mm_addr, ptep);
@@ -887,21 +877,20 @@ mappings.
 >   is set on that particular page.
 >
 > [`text_poke_mm_addr`](https://elixir.bootlin.com/linux/v7.2/source/arch/x86/kernel/alternative.c#L2516)
-> falls right in the gap between those two rules. To be clear, it is
-> **not** actually a userspace mapping:
+> falls right in the gap between those two rules. It is **not** a
+> userspace mapping:
 > [`poking_init()`](https://elixir.bootlin.com/linux/v7.2/source/arch/x86/mm/init.c#L819)
 > sets it to
 > [`TASK_UNMAPPED_BASE`](https://elixir.bootlin.com/linux/v7.2/source/arch/x86/include/asm/processor.h#L684),
 > plus a KASLR-style random offset — the same range where calls to
 > [`mmap()`](https://elixir.bootlin.com/linux/v7.2/source/arch/x86/kernel/sys_x86_64.c#L82)
-> made by an ordinary process would land. That’s simply because
+> made by an ordinary process would land — because
 > [`text_poke_mm`](https://elixir.bootlin.com/linux/v7.2/source/arch/x86/kernel/alternative.c#L2515)
 > is built with
 > [`mm_alloc()`](https://elixir.bootlin.com/linux/v7.2/source/kernel/fork.c#L1166),
 > the ordinary allocator for a process address space, and a freshly
-> allocated `mm` just happens to have empty space to carve one throwaway
-> page out of down there. The page-table entry actually built at that
-> address is an ordinary kernel-only mapping, with
+> allocated `mm` has empty space there. The page-table entry actually
+> built at that address is an ordinary kernel-only mapping, with
 > [`_PAGE_USER`](https://elixir.bootlin.com/linux/v7.2/source/arch/x86/include/asm/pgtable_types.h#L53)
 > left clear, so nothing about it is reachable from user mode.
 >
@@ -1123,11 +1112,11 @@ l_yes:
 }
 ```
 
-Notice these are two separate C functions, rather than one shared
-function that takes an extra argument telling it whether to build a
-`nop`-shaped site or a `jmp`-shaped one — something like an imagined
+These are two separate C functions, rather than one shared function that
+takes an extra argument telling it whether to build a `nop`-shaped site
+or a `jmp`-shaped one — something like an imagined
 `arch_static_branch(key, branch, use_jmp)`. That design is not just
-unused, it is impossible here: the assembly text inside each function is
+unused: it is impossible here. The assembly text inside each function is
 fixed, literal text, embedded straight into the compiled function body
 at build time. A runtime argument (a value only known while the kernel
 is running) cannot make a single function body sometimes contain one
@@ -1219,11 +1208,11 @@ is:
   [§5.1](#two-polarities-key-default-branch-hint) keeps referring to: it
   exists, unconditionally, in the object file the moment this
   translation unit is assembled, before anything has been patched.
-- `JUMP_TABLE_ENTRY("%c0 + %c1", "%l[l_yes]")` expands in place right
-  there, splicing a jump-table entry describing *this exact* `1:`/`jmp`
-  pair into the assembly stream.
-  [§5.4](#the-jump-table-entry-sidecar-metadata) covers what that entry
-  stores and why; the mechanical detail worth flagging here is the pair
+- [`JUMP_TABLE_ENTRY`](https://elixir.bootlin.com/linux/v7.2/source/arch/x86/include/asm/jump_label.h#L15)
+  (`"%c0 + %c1"`, `"%l[l_yes]"`) expands in place right there, splicing
+  a jump-table entry describing *this exact* `1:`/`jmp` pair into the
+  assembly stream. [§5.4](#the-jump-table-entry-sidecar-metadata) covers
+  what that entry stores and why; the mechanical detail here is the pair
   `.pushsection __jump_table, "aw"` / `.popsection` inside it, which
   temporarily redirects everything the assembler emits into a different
   ELF section
@@ -1313,6 +1302,12 @@ equivalent in ordinary `asm(...)`.
 
 ### 5.4 The jump table entry (sidecar metadata) {#the-jump-table-entry-sidecar-metadata}
 
+Each site also emits a
+[`struct jump_entry`](https://elixir.bootlin.com/linux/v7.2/source/include/linux/jump_label.h#L111)
+into
+[`__jump_table`](https://elixir.bootlin.com/linux/v7.2/source/include/asm-generic/vmlinux.lds.h#L436).
+The macro writes no executable code:
+
 ``` c
 #define JUMP_TABLE_ENTRY(key, label)                   \
         ".pushsection __jump_table,  \"aw\" \n\t"      \
@@ -1323,12 +1318,6 @@ equivalent in ordinary `asm(...)`.
         _ASM_PTR " " key " - . \n\t"                   \
         ".popsection \n\t"
 ```
-
-This emits **no executable code**. It appends one
-[`struct jump_entry`](https://elixir.bootlin.com/linux/v7.2/source/include/linux/jump_label.h#L111)
-into the
-[`__jump_table`](https://elixir.bootlin.com/linux/v7.2/source/scripts/module.lds.S#L31)
-ELF section:
 
 | Field | Asm | Meaning |
 |----|----|----|
@@ -1407,13 +1396,15 @@ Stepping back from the line-by-line reading: `code`/`target` use `.long`
 (a fixed 32 bits) while `key` uses `_ASM_PTR` (native pointer width — 64
 bits on x86_64). That is not an inconsistency: the patchable instruction
 and its own `l_yes` label are always emitted right next to each other,
-in the same function, so a 32-bit displacement can’t help but reach. The
-`static_key` itself carries no such guarantee. As the comment on
+in the same function, so a 32-bit displacement cannot help but reach.
+The
+[`static_key`](https://elixir.bootlin.com/linux/v7.2/source/include/linux/jump_label.h#L86)
+itself carries no such guarantee. As the comment on
 [`struct jump_entry`](https://elixir.bootlin.com/linux/v7.2/source/include/linux/jump_label.h#L111)
 itself puts it, the key “may be far away from the core kernel under
 KASLR” — or it may simply live in a module loaded who-knows-where
 relative to this call site. That one field needs the full address range
-a 32-bit offset couldn’t promise.
+a 32-bit offset could not promise.
 
 Each of those three fields is a **self-relative** offset. The natural
 first guess for what that means is “distance from the start of the
@@ -1434,7 +1425,7 @@ same recipe. Working through the first field concretely:
        some other address, C, out in .text.
 
        What .pushsection/.long actually wrote into the .code field, back
-       at assembly time (§5.2), is the *distance* between those two
+       at assembly time, is the *distance* between those two
        addresses:
 
            value stored in entry->code  =  C - F
@@ -1484,33 +1475,20 @@ written as a hand-coded `.byte BYTES_NOP5` — a fixed 5-byte NOP — but
 that is not the size that actually lands in a compiled kernel. Depending
 on the call site, the NOP that ends up in memory can be either a compact
 2-byte instruction or the full 5-byte one, and which of the two you get
-is settled long before the kernel ever boots, by a build-time trick this
-section walks through in full: get the compiler to emit a real `jmp` (so
-it can pick whichever encoding is actually shortest for that call site),
-then have a separate build step convert that `jmp` into a NOP of the
-*same* size, after compilation but before the kernel image is final.
+is settled long before the kernel ever boots: get the compiler to emit a
+real `jmp` (so it can pick whichever encoding is actually shortest for
+that call site), then have a separate build step convert that `jmp` into
+a NOP of the *same* size, after compilation but before the kernel image
+is final.
 
-That trick is gated by a single config option,
+That trick is gated by
 [`HAVE_JUMP_LABEL_HACK`](https://elixir.bootlin.com/linux/v7.2/source/arch/Kconfig#L1399).
 [`arch/x86/Kconfig`](https://elixir.bootlin.com/linux/v7.2/source/arch/x86/Kconfig)
 turns it on for any build with objtool available
 (`select HAVE_JUMP_LABEL_HACK if HAVE_OBJTOOL`) — which, in practice,
-means every modern x86_64 build. Recall
+means every modern x86_64 build. The
 [`ARCH_STATIC_BRANCH_ASM`](https://elixir.bootlin.com/linux/v7.2/source/arch/x86/include/asm/jump_label.h#L26)
-from [§5.3](#the-two-asm-helpers), which branches on this exact config
-option:
-
-``` c
-#ifdef CONFIG_HAVE_JUMP_LABEL_HACK
-#define ARCH_STATIC_BRANCH_ASM(key, label)             \
-        "1: jmp " label " # `objtool` NOPs this \n\t"    \
-        JUMP_TABLE_ENTRY(key " + 2", label)
-#else
-#define ARCH_STATIC_BRANCH_ASM(key, label)             \
-        "1: .byte " __stringify(BYTES_NOP5) "\n\t"     \
-        JUMP_TABLE_ENTRY(key, label)
-#endif
-```
+`#ifdef` from [§5.3](#the-two-asm-helpers) is the compile-time switch.
 
 The hack exists to solve a problem the compiler cannot: a hand-written
 `.byte BYTES_NOP5` always produces a 5-byte NOP, even for sites that
@@ -1547,7 +1525,7 @@ time. Concretely, with the hack enabled (the normal case on x86_64):
     by anything at runtime; it exists purely as a signal for the next
     step.
 3.  **objtool**
-    ([`tools/objtool/check.c:handle_jump_alt`](https://elixir.bootlin.com/linux/v7.2/source/tools/objtool/check.c#L1872)),
+    ([`handle_jump_alt()`](https://elixir.bootlin.com/linux/v7.2/source/tools/objtool/check.c#L1872)),
     which runs once over the compiled object files as part of the build,
     sees `key_addend & 2` set, and rewrites that `jmp` in place into a
     **same-sized NOP**, clearing the relocation that would otherwise
@@ -1595,18 +1573,17 @@ reproduced at every later patch, so a site never ends up needing more
 room than the code around it left for it.
 
 Builds without the hack
-([`CONFIG_HAVE_JUMP_LABEL_HACK`](https://elixir.bootlin.com/linux/v7.2/source/arch/Kconfig#L1399)
+([`HAVE_JUMP_LABEL_HACK`](https://elixir.bootlin.com/linux/v7.2/source/arch/Kconfig#L1399)
 unset — older toolchains without `objtool` support) never go through any
-of this. They use the other
+of this. They use the `#else` branch of
 [`ARCH_STATIC_BRANCH_ASM`](https://elixir.bootlin.com/linux/v7.2/source/arch/x86/include/asm/jump_label.h#L26)
-branch shown at the top of this section: a hand-written
-`.byte BYTES_NOP5` that always emits a fixed 5-byte NOP, no matter how
-close the target label actually is, and patching such a site later
-always installs a 5-byte `JMP32` to match. The result is still correct —
-the branch still works exactly the same way — it just never gets the
-chance to use the shorter 2-byte encoding, so every nop-default site
-costs 3 extra bytes of I-cache footprint compared to a hack-enabled
-build.
+shown in [§5.3](#the-two-asm-helpers): a hand-written `.byte BYTES_NOP5`
+that always emits a fixed 5-byte NOP, no matter how close the target
+label actually is, and patching such a site later always installs a
+5-byte `JMP32` to match. The result is still correct — the branch still
+works exactly the same way — it just never gets the chance to use the
+shorter 2-byte encoding, so every nop-default site costs 3 extra bytes
+of I-cache footprint compared to a hack-enabled build.
 
 That whole `objtool` rewrite (the numbered steps above) only applies to
 [`arch_static_branch`](https://elixir.bootlin.com/linux/v7.2/source/arch/x86/include/asm/jump_label.h#L35),
@@ -1648,7 +1625,7 @@ Conflating the two is an easy way to misread this code cold:
       (only meaningful to objtool;           OVERWRITES it to mean:
        consumed and discarded before                bit 1 = "jump_entry_is_init"
        the kernel ever boots)                (site is in __init text, unpatchable
-                                              once init memory is freed — §8.1)
+                                              once init memory is freed)
 
 That boot-time flag is set by
 [`jump_entry_set_init()`](https://elixir.bootlin.com/linux/v7.2/source/include/linux/jump_label.h#L163)
@@ -1664,7 +1641,7 @@ line shown above.
 [§5.3](#the-two-asm-helpers) gave the two C helpers,
 [§5.4](#the-jump-table-entry-sidecar-metadata) gave the jump-table entry
 they emit, and [§5.5](#have-jump-label-hack-why-sites-are-2-or-5-bytes)
-explained why the bytes at the patchable site itself aren’t fixed. Put
+explained why the bytes at the patchable site itself are not fixed. Put
 together, for a **nop-default** site on a
 [`HAVE_JUMP_LABEL_HACK`](https://elixir.bootlin.com/linux/v7.2/source/arch/Kconfig#L1399)
 build (the normal case on x86_64), this is everything that lands in the
@@ -1672,14 +1649,14 @@ object file:
 
     .text:
             1:  0f 1f 44 00 00  ; 5-byte NOP if l_yes was far, OR 66 90 (2-byte) if
-                ...             ; close (objtool rewrote a real `jmp` into this,
-                                ; at build time — §5.3)
+                ...             ; close (objtool rewrote a real jmp into this
+                                ; at build time)
 
-    __jump_table:                   ; non-executable metadata, in __jump_table (§5.2)
+    __jump_table:                   ; non-executable metadata
             .long   1b - .          ; code:   self-relative offset to the NOP above
             .long   L - .           ; target: self-relative offset to l_yes
-            .quad   key+branch+2 - .; key: static_key address, branch bit set (§5.2),
-                                    ;      plus the objtool-only "+2" signal (§5.3)
+            .quad   key+branch+2 - .; key: static_key address, branch bit 0,
+                                    ;      plus the objtool-only "+2" signal
 
 The two possible byte sequences shown for the `1:` label in `.text` are
 genuinely different instructions, not interchangeable padding:
@@ -1690,7 +1667,7 @@ reach 5 bytes). `66 90` is the 2-byte alternative. `0x66` is the
 *operand-size override prefix* of x86, normally used to shrink the
 operand of a following instruction from 32 to 16 bits, stacked in front
 of `0x90`, the classic single-byte `NOP` (historically the opcode for
-`XCHG AX, AX`). Combining them doesn’t change what the CPU actually
+`XCHG AX, AX`). Combining them does not change what the CPU actually
 does; the prefix is there purely to pad the encoding out to exactly 2
 bytes. Either sequence is a genuine no-op either way: the CPU decodes
 it, spends a cycle or so, and falls straight through to whatever comes
@@ -1721,11 +1698,9 @@ so it’s worth naming them explicitly:
   overwrites that same bit with an unrelated meaning
   ([§8.1](#boot-jump-label-init)) once boot begins.
 
-One more x86-specific config bit is worth flagging before moving past
-“what the compiler emits” to “what the kernel does with it”:
-[`HAVE_JUMP_LABEL_BATCH`](https://elixir.bootlin.com/linux/v7.2/source/arch/x86/include/asm/jump_label.h#L5)
-is also defined on x86, which is what makes the batched, IPI-amortized
-patch path in
+x86 also defines
+[`HAVE_JUMP_LABEL_BATCH`](https://elixir.bootlin.com/linux/v7.2/source/arch/x86/include/asm/jump_label.h#L5),
+which is what makes the batched, IPI-amortized patch path in
 [§8](#life-of-a-static-key-boot-enable-disable)–[§9](#x86-text-patching-the-gory-details)
 available at all — without it, every jump-table entry would have to be
 patched (and synchronized across every CPU) one at a time.
@@ -1733,6 +1708,9 @@ patched (and synchronized across every CPU) one at a time.
 ------------------------------------------------------------------------
 
 ## 6 Core data structures {#core-data-structures}
+
+Two structs and one linker-collected table. The rest of the document
+keeps pointing at these.
 
 ### 6.1 [`struct static_key`](https://elixir.bootlin.com/linux/v7.2/source/include/linux/jump_label.h#L86) {#struct-static-key}
 
@@ -1838,9 +1816,9 @@ the rest of the kernel just sees “the entries for this key,” never the
 tag bits.
 
 Finally, the two type wrappers from
-[§5.2](#how-the-macros-pick-the-asm)’s
-[`__builtin_types_compatible_p`](https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html)
-check are trivial by design — each is nothing but a
+[§5.2](#how-the-macros-pick-the-asm), used by
+[`__builtin_types_compatible_p`](https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html),
+are trivial by design — each is nothing but a
 [`struct static_key`](https://elixir.bootlin.com/linux/v7.2/source/include/linux/jump_label.h#L86)
 in a differently-named box:
 
@@ -1851,9 +1829,10 @@ struct static_key_false { struct static_key key; };
 
 Their entire purpose is to exist as two *distinct C types* the compiler
 can tell apart at compile time, even though they carry identical data —
-exactly what [§5.2](#how-the-macros-pick-the-asm)’s
+exactly what the
 [`static_branch_likely()`](https://elixir.bootlin.com/linux/v7.2/source/include/linux/jump_label.h#L474)/[`static_branch_unlikely()`](https://elixir.bootlin.com/linux/v7.2/source/include/linux/jump_label.h#L486)
-macros rely on to pick the right arch helper.
+macros in [§5.2](#how-the-macros-pick-the-asm) rely on to pick the right
+arch helper.
 
 ### 6.2 [`struct jump_entry`](https://elixir.bootlin.com/linux/v7.2/source/include/linux/jump_label.h#L111) (relative form) {#struct-jump-entry-relative-form}
 
@@ -1863,7 +1842,7 @@ already been building up piece by piece — the one
 writes one instance of, per call site, into
 [`__jump_table`](https://elixir.bootlin.com/linux/v7.2/source/include/asm-generic/vmlinux.lds.h#L436).
 x86 opts into a specific *variant* of it by selecting
-[`CONFIG_HAVE_ARCH_JUMP_LABEL_RELATIVE`](https://elixir.bootlin.com/linux/v7.2/source/arch/Kconfig#L509)
+[`HAVE_ARCH_JUMP_LABEL_RELATIVE`](https://elixir.bootlin.com/linux/v7.2/source/arch/Kconfig#L509)
 in its Kconfig, which is what makes the struct look like this:
 
 ``` c
@@ -1977,9 +1956,9 @@ That distinction matters because, like `code` and `target`
 ([§5.4](#the-jump-table-entry-sidecar-metadata)), `key` is
 self-relative: it stores a *distance to the key, measured from the
 address of this entry itself in the table*, not the address of the key
-directly. That’s exactly what the function does. It masks off the two
-flag bits ([§6.2](#struct-jump-entry-relative-form)) to recover the
-offset, then adds its own field address back in:
+directly. That is what the function does. It masks off the two flag bits
+([§6.2](#struct-jump-entry-relative-form)) to recover the offset, then
+adds its own field address back in:
 
 ``` c
 static inline struct static_key *jump_entry_key(const struct jump_entry *entry)
@@ -2121,7 +2100,7 @@ That linker-driven concatenation only covers code built directly into
 `vmlinux`. A module compiled and loaded later has no way to participate
 in a linker script that already finished running long before the module
 even existed, so it carries its own private
-[`__jump_table`](https://elixir.bootlin.com/linux/v7.2/source/include/asm-generic/vmlinux.lds.h#L436)
+[`__jump_table`](https://elixir.bootlin.com/linux/v7.2/source/scripts/module.lds.S#L31)
 section inside its own `.ko` file instead. When the module loader maps
 that module in, it reads that section itself and records its bounds in
 the two fields
@@ -2240,9 +2219,9 @@ explanation from
 [§5.5](#have-jump-label-hack-why-sites-are-2-or-5-bytes), just given
 their real opcode values here.
 [`text_gen_insn()`](https://elixir.bootlin.com/linux/v7.2/source/arch/x86/include/asm/text-patching.h#L123)
-builds the actual `jmp` bytes for whichever opcode it’s given, computing
-the displacement itself as `dest - (addr + size)` — precisely the
-“distance from the address of the *next* instruction” convention
+builds the actual `jmp` bytes for whichever opcode it is given,
+computing the displacement itself as `dest - (addr + size)` — precisely
+the “distance from the address of the *next* instruction” convention
 [§5.5](#have-jump-label-hack-why-sites-are-2-or-5-bytes) described for
 `rel8`/`rel32` encodings, just computed here at patch time instead of by
 the assembler at build time.
@@ -2335,11 +2314,11 @@ is a bare atomic increment or decrement, with no
 [`jump_label_update()`](https://elixir.bootlin.com/linux/v7.2/source/kernel/jump_label.c#L886)
 call anywhere in it.
 
-That single fact is the whole point of the refcounted API in
-[§3.3](#boolean-enable-vs-refcounted-enable): many callers can share a
-key without each one paying for a text-patch round-trip — the cost of
-patching is paid exactly once, by whichever caller happens to be the
-first to enable it or the last to disable it.
+That is why the refcounted API in
+[§3.3](#boolean-enable-vs-refcounted-enable) exists: many callers can
+share a key without each one paying for a text-patch round-trip — the
+cost of patching is paid exactly once, by whichever caller happens to be
+the first to enable it or the last to disable it.
 
 ### 8.1 Boot: [`jump_label_init()`](https://elixir.bootlin.com/linux/v7.2/source/kernel/jump_label.c#L525) {#boot-jump-label-init}
 
@@ -2745,13 +2724,12 @@ void static_key_disable_cpuslocked(struct static_key *key)
 
 [`static_key_disable_cpuslocked()`](https://elixir.bootlin.com/linux/v7.2/source/kernel/jump_label.c#L228)
 is the mirror, in the boolean API, of the enable path from
-[§8.2](#enabling-static-key-enable-static-branch-enable), but it gets to
-skip the `-1` choreography of that path entirely — for a reason worth
-spelling out rather than just noting. It first checks that the key is
-currently exactly `1`, bailing out (and warning if the value isn’t `0`
-either, which would mean the boolean and refcounted APIs got mixed on
-this key — [§3.3](#boolean-enable-vs-refcounted-enable)) before doing
-anything else. The actual disable is then a single
+[§8.2](#enabling-static-key-enable-static-branch-enable), but it skips
+the `-1` choreography. It first checks that the key is currently exactly
+`1`, bailing out (and warning if the value isn’t `0` either, which would
+mean the boolean and refcounted APIs got mixed on this key —
+[§3.3](#boolean-enable-vs-refcounted-enable)) before doing anything
+else. The actual disable is then a single
 `atomic_cmpxchg(&key->enabled, 1, 0)`: “if the value is currently `1`,
 replace it with `0`, and tell me whether you succeeded.” If some other
 CPU changed it first, the compare fails and this call does nothing
@@ -3022,18 +3000,9 @@ calls it once, after its loop ends, to flush whatever is still pending.
 
 ## 9 x86 text patching: the gory details {#x86-text-patching-the-gory-details}
 
-This is where the “you cannot just `memcpy` over live code” argument
-from [§4.3](#why-you-cannot-just-memcpy-over-live-code-on-smp) turns
-into actual working code. Roadmap: [§9.1](#early-boot-vs-live-smp) picks
-early-boot-single-CPU vs. later-multi-CPU;
-[§9.2](#batching-api-used-by-jump-labels) covers the batching array that
-collects many sites before paying for synchronization;
-[§9.3](#the-int3-smp-algorithm-smp-text-poke-batch-finish) is the INT3
-protocol itself — the heart of the mechanism;
-[§9.4](#what-sync-means)–[§9.5](#writing-through-ro-mappings) fill in
-what “synchronize” and “write to RO memory” actually mean underneath;
-[§9.6](#end-to-end-timeline-for-one-enable) strings it all into one
-timeline.
+This is where the torn-write argument from
+[§4.3](#why-you-cannot-just-memcpy-over-live-code-on-smp) turns into
+working code.
 
 ### 9.1 Early boot vs live SMP {#early-boot-vs-live-smp}
 
@@ -3072,10 +3041,10 @@ already up while `.text` is still writable. Jump labels take the full
 protocol for that entire stretch anyway, because the only thing this
 check ever verifies is whether this CPU is still provably alone.
 
-The leading `init` in that condition is easy to misread as the per-site
-`__init`-text flag from [§8.1](#boot-jump-label-init)
-([`jump_entry_is_init()`](https://elixir.bootlin.com/linux/v7.2/source/include/linux/jump_label.h#L158))
-— it is not. It is a separate, whole-system flag threaded down from
+The leading `init` in that condition is not the per-site `__init`-text
+flag from [§8.1](#boot-jump-label-init)
+([`jump_entry_is_init()`](https://elixir.bootlin.com/linux/v7.2/source/include/linux/jump_label.h#L158)).
+It is a separate, whole-system flag threaded down from
 `init = system_state < SYSTEM_RUNNING` inside
 [`jump_label_update()`](https://elixir.bootlin.com/linux/v7.2/source/kernel/jump_label.c#L886)
 itself ([§8.5](#jump-label-update-jump-label-update)), true a little
@@ -3666,10 +3635,8 @@ every CPU, which is precisely the guarantee this fallback needs — it
 works identically at any privilege level (so it survives under
 paravirtualization) and never exits to a hypervisor, both properties
 this code cannot give up. The price is that it measures a bit more than
-twice as slow as the dedicated instruction, and it carries one side
-effect worth knowing about even though it doesn’t matter for this call
-site: it unconditionally unmasks NMIs, something the fast-path
-`SERIALIZE` instruction simply does not do.
+twice as slow as the dedicated instruction, and it unconditionally
+unmasks NMIs, which `SERIALIZE` does not.
 
 One more candidate is conspicuously missing. `CPUID` also serializes,
 and on paper looks like the most portable option of all. The kernel
@@ -3679,9 +3646,7 @@ is exactly the kind of hot, latency-sensitive path — run on every online
 CPU, on every single key toggle — that cannot tolerate an unpredictable
 VM exit in the middle of it.
 
-Put together, the choice between the two real options is not a fallback
-chain padded with special cases — it is a single feature check, decided
-once per call:
+The choice is a single feature check, decided once per call:
 
 ``` c
 static __always_inline void sync_core(void)
@@ -4034,8 +3999,7 @@ it is the only form this key has ever needed — which is why this branch
 `continue`s past all the linked-list machinery that follows.
 
 A key that fails that check has call sites outside this module, so
-before building any list node it is worth asking whether one is even
-possible — the **sealed** case:
+before building any list node the **sealed** case has to be checked:
 
 ``` c
                 if (static_key_sealed(key))
@@ -4356,7 +4320,7 @@ ends.
 
 ## 11 Fallback: [`CONFIG_JUMP_LABEL=n`](https://elixir.bootlin.com/linux/v7.2/source/arch/Kconfig#L130) {#fallback-config-jump-label-n}
 
-[`CONFIG_JUMP_LABEL`](https://elixir.bootlin.com/linux/v7.2/source/arch/Kconfig#L130)
+[`JUMP_LABEL`](https://elixir.bootlin.com/linux/v7.2/source/arch/Kconfig#L130)
 is optional. Most distro kernels end up with it on — arm64 selects it
 outright, and on x86
 [`PREEMPT_DYNAMIC`](https://elixir.bootlin.com/linux/v7.2/source/kernel/Kconfig.preempt#L129)
@@ -4667,7 +4631,6 @@ The numbered steps below walk through this chain in detail:
     does the actual patching, and only after it returns does
     [`enabled`](https://elixir.bootlin.com/linux/v7.2/source/include/linux/jump_label.h#L87)
     get published as `1` with release ordering.
-
 2.  [`jump_label_update()`](https://elixir.bootlin.com/linux/v7.2/source/kernel/jump_label.c#L886)
     finds the one entry of `k` and computes
     [`jump_label_type(entry)`](https://elixir.bootlin.com/linux/v7.2/source/kernel/jump_label.c#L455)
@@ -4677,7 +4640,6 @@ The numbered steps below walk through this chain in detail:
     [`static_key_enabled()`](https://elixir.bootlin.com/linux/v7.2/source/include/linux/jump_label.h#L407)
     reports as `true`; `branch` is the stored hint bit, `0`.
     `true ^ false = JMP` — the live nop becomes a jmp.
-
 3.  [`arch_jump_label_transform_queue()`](https://elixir.bootlin.com/linux/v7.2/source/arch/x86/kernel/jump_label.c#L123)
     calls
     [`__jump_label_patch()`](https://elixir.bootlin.com/linux/v7.2/source/arch/x86/kernel/jump_label.c#L36),
@@ -4699,7 +4661,6 @@ The numbered steps below walk through this chain in detail:
     They match, so the patch `66 90` → `EB 50` gets queued via
     [`smp_text_poke_batch_add()`](https://elixir.bootlin.com/linux/v7.2/source/arch/x86/kernel/alternative.c#L3202)
     ([§9.2](#batching-api-used-by-jump-labels)).
-
 4.  The loop of
     [`jump_label_update()`](https://elixir.bootlin.com/linux/v7.2/source/kernel/jump_label.c#L886)
     over the entries of `k` ends here — there is only the one — so
@@ -4711,24 +4672,26 @@ The numbered steps below walk through this chain in detail:
     one queued site, now with the real two bytes instead of a
     placeholder:
 
-        start (before)     66 90              any fetch: executes the 2-byte NOP
+<!-- -->
 
-        phase 1 (INT3 in)  cc 90              any fetch: #BP -> handler emulates
-                           ^^                 the pending JMP (jumps to l_yes)
-                           trap byte
+       start (before)     66 90              any fetch: executes the 2-byte NOP
 
-                           -------- IPI sync --------
+       phase 1 (INT3 in)  cc 90              any fetch: #BP -> handler emulates
+                          ^^                 the pending JMP (jumps to l_yes)
+                          trap byte
 
-        phase 2 (tail in)  cc 50              same as phase 1: byte 0 still
-                           ^^                 traps and gets emulated — byte 1
-                           still traps        is now its final value underneath
+                          -------- IPI sync --------
 
-                           -------- IPI sync --------
+       phase 2 (tail in)  cc 50              same as phase 1: byte 0 still
+                          ^^                 traps and gets emulated — byte 1
+                          still traps        is now its final value underneath
 
-        phase 3 (done)     eb 50              any fetch: executes the real
-                           ^^ real opcode     JMP rel8 directly, no trap needed
+                          -------- IPI sync --------
 
-                           -------- IPI sync --------
+       phase 3 (done)     eb 50              any fetch: executes the real
+                          ^^ real opcode     JMP rel8 directly, no trap needed
+
+                          -------- IPI sync --------
 
 5.  From the instant the sync in phase 1 completes, any CPU landing on
     this address already gets the effect of the jump via emulation
